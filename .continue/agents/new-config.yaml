@@ -1,0 +1,8 @@
+name: SiliconFlow Config
+version: 1
+models:
+  - name: Claude via SiliconFlow
+    provider: openai
+    model: Qwen/Qwen2.5-7B-Instruct
+    apiKey: sk-pknczhflgyvqgthfjbwcmphoxwnwvprowyfdiipgcdlngmdx
+    apiBase: https://api.siliconflow.cn/v1
