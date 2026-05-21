@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="天天工具箱">
+  <meta name="description" content="免费实用在线工具集：聊天截图生成、随机抽签、运势测试、番茄钟、今日历史、二维码生成、单位换算、密码生成、颜色取色器、JSON格式化">
+  <meta name="theme-color" content="#ff6b35">
+  <meta property="og:title" content="天天工具箱 - 实用在线工具集">
+  <meta property="og:description" content="聊天截图生成·运势测试·抽签·番茄钟·全部免费">
+  <meta property="og:type" content="website">
+  <title>天天工具箱 - 实用在线工具集</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #ff6b35;
+      --primary-light: #ff8f5e;
+      --primary-dark: #e05520;
+      --accent: #ffd166;
+      --bg: #faf8f5;
+      --bg-card: #ffffff;
+      --bg-nav: rgba(250,248,245,0.92);
+      --text: #1a1410;
+      --text-sub: #6b5e52;
+      --text-mute: #a89a8e;
+      --border: rgba(0,0,0,0.07);
+      --shadow: 0 2px 16px rgba(255,107,53,0.10);
+      --shadow-hover: 0 8px 32px rgba(255,107,53,0.18);
+      --radius: 18px;
+      --radius-sm: 10px;
+      --transition: 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    [data-theme="dark"] {
+      --bg: #13100e;
+      --bg-card: #1f1a17;
+      --bg-nav: rgba(19,16,14,0.92);
+      --text: #f5ede6;
+      --text-sub: #d4c0b0;
+      --text-mute: #9a8070;
+      --border: rgba(255,255,255,0.15);
+      --shadow: 0 2px 16px rgba(0,0,0,0.4);
+      --shadow-hover: 0 8px 32px rgba(255,107,53,0.22);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      background: var(--bg-nav); border-bottom: 1px solid var(--border);
+      padding: 0 16px; height: 56px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .nav-logo { font-family: 'Ma Shan Zheng', cursive; font-size: 20px; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap input {
+      width: 100%; height: 36px; border-radius: 18px;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 14px; padding: 0 14px 0 36px;
+      outline: none; transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .search-wrap input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,107,53,0.12); }
+    .search-wrap input::placeholder { color: var(--text-mute); }
+    .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+    .nav-btns { display: flex; gap: 6px; flex-shrink: 0; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: var(--bg); color: var(--text); font-size: 17px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .icon-btn:active { transform: scale(0.9); }
+    .main { max-width: 480px; margin: 0 auto; padding: 16px 12px 100px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      color: var(--text-sub); font-size: 13px; cursor: pointer; transition: all var(--transition);
+    }
+    .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+    .section-title { font-size: 12px; color: var(--text-mute); letter-spacing: 0.08em; text-transform: uppercase; margin: 18px 0 8px 4px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card {
+      background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);
+      padding: 16px 14px 14px; cursor: pointer; text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden;
+      transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+      animation: fadeUp 0.35s ease both;
+    }
+    .card:active { transform: scale(0.97); }
+    .card:hover { box-shadow: var(--shadow-hover); border-color: rgba(255,107,53,0.25); }
+    .card.fav-active { border-color: var(--accent); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+    .card-emoji { font-size: 28px; line-height: 1; }
+    .fav-btn {
+      background: none; border: none; font-size: 16px; cursor: pointer;
+      opacity: 0.4; transition: opacity var(--transition), transform var(--transition); padding: 2px;
+    }
+    .fav-btn:hover { opacity: 1; } .fav-btn.active { opacity: 1; transform: scale(1.15); }
+    .card-name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+    .card-desc { font-size: 12px; color: var(--text-sub); line-height: 1.4; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+    .badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.04em; }
+    .badge-hot { background: #fff0eb; color: var(--primary); }
+    .badge-new { background: #e8f5e9; color: #388e3c; }
+    [data-theme="dark"] .badge-hot { background: rgba(255,107,53,0.15); }
+    [data-theme="dark"] .badge-new { background: rgba(56,142,60,0.15); }
+    .card-uses { font-size: 11px; color: var(--text-mute); }
+    .ad-banner {
+      margin: 10px 0; border-radius: var(--radius-sm); border: 1px dashed var(--border);
+      padding: 10px 14px; font-size: 12px; color: var(--text-mute); text-align: center;
+      cursor: pointer; transition: border-color var(--transition);
+    }
+    .ad-banner:hover { border-color: var(--primary); color: var(--primary); }
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: var(--bg-nav); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bnav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 8px 0; gap: 3px; cursor: pointer; font-size: 11px; color: var(--text-mute);
+      border: none; background: none; transition: color var(--transition);
+    }
+    .bnav-item.active { color: var(--primary); } .bnav-item .bnav-icon { font-size: 20px; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg-card); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px;
+      padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+      transform: translateY(40px); transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .toast-wrap {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 999;
+      display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none;
+    }
+    .toast {
+      background: rgba(26,20,16,0.9); color: #fff; font-size: 13px;
+      padding: 9px 18px; border-radius: 20px; white-space: nowrap; animation: toastIn 0.22s ease;
+    }
+    [data-theme="dark"] .toast { background: rgba(245,237,230,0.92); color: #1a1410; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(8px) scale(0.95); } to { opacity: 1; transform: none; } }
+    .donate-qr { width: 220px; height: 220px; background: #f0f0f0; border-radius: 12px; display: block; margin: 0 auto 12px; object-fit: cover; cursor: pointer; -webkit-touch-callout:default; }
+    .donate-note { font-size: 13px; color: var(--text-sub); text-align: center; line-height: 1.6; }
+    .qr-overlay {
+      display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.92);
+      align-items:center; justify-content:center; flex-direction:column;
+    }
+    .qr-overlay.show{display:flex}
+    .qr-overlay img{width:280px;height:280px;border-radius:16px;object-fit:contain;background:#fff;padding:12px}
+    .qr-overlay .qr-close{color:#fff;margin-top:20px;font-size:16px;cursor:pointer;padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:20px;background:none}
+    .tool-sheet {
+      position: fixed; inset: 0; z-index: 300;
+      display: flex; flex-direction: column; background: var(--bg);
+      transform: translateY(100%); transition: transform 0.32s cubic-bezier(.4,0,.2,1);
+    }
+    .tool-sheet.open { transform: none; }
+    .tool-sheet-nav {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border); background: var(--bg-nav); backdrop-filter: blur(12px);
+    }
+    .tool-sheet-title { font-size: 16px; font-weight: 700; flex: 1; }
+    .tool-sheet iframe { flex: 1; border: none; width: 100%; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--text-mute); }
+    .empty-emoji { font-size: 48px; margin-bottom: 12px; }
+    .install-banner {
+      display: none; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff; border-radius: var(--radius-sm); padding: 12px 14px;
+      margin-bottom: 12px; cursor: pointer; font-size: 13px;
+    }
+    .install-banner.show { display: flex; }
+    .install-banner-text { flex: 1; }
+    .install-banner-btn {
+      background: rgba(255,255,255,0.25); border: none; color: #fff;
+      border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .share-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .share-btn {
+      flex: 1; min-width: 100px; padding: 11px 10px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+      font-size: 13px; cursor: pointer; text-align: center; transition: all var(--transition);
+    }
+    .share-btn:active { transform: scale(0.96); }
+    .share-btn.primary-btn { background: var(--primary); border-color: var(--primary); color: #fff; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">🛠️ 天天工具箱</div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="search" id="searchInput" placeholder="搜索工具…" autocomplete="off">
+  </div>
+  <div class="nav-btns">
+    <button class="icon-btn" id="themeBtn" title="切换主题">🌙</button>
+    <button class="icon-btn" id="shareNavBtn" title="分享">📤</button>
+  </div>
+</nav>
+
+<main class="main" id="mainContent">
+  <div class="install-banner" id="installBanner">
+    <span style="font-size:22px">📲</span>
+    <div class="install-banner-text"><strong>添加到主屏幕</strong><br><span style="font-size:11px;opacity:.85">离线可用，体验更流畅</span></div>
+    <button class="install-banner-btn" id="installBtn">安装</button>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-cat="all">全部</button>
+    <button class="tab" data-cat="fav">⭐ 收藏</button>
+    <button class="tab" data-cat="fun">娱乐</button>
+    <button class="tab" data-cat="productivity">效率</button>
+    <button class="tab" data-cat="util">工具</button>
+  </div>
+  <div class="ad-banner" onclick="openDonate()">📢 广告位招租 · 合作咨询：15983432464</div>
+  <div class="grid" id="toolGrid"></div>
+  <div class="empty" id="emptyState" style="display:none"><div class="empty-emoji">🔍</div><div>没有找到相关工具</div></div>
+</main>
+
+<nav class="bottom-nav">
+  <button class="bnav-item active" data-tab="home"><span class="bnav-icon">🏠</span>全部</button>
+  <button class="bnav-item" data-tab="fav"><span class="bnav-icon">⭐</span>收藏</button>
+  <button class="bnav-item" data-tab="share" onclick="openShare()"><span class="bnav-icon">📤</span>分享</button>
+  <button class="bnav-item" data-tab="donate" onclick="openDonate()"><span class="bnav-icon">❤️</span>打赏</button>
+</nav>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📤 分享工具箱</div>
+    <div class="share-row">
+      <button class="share-btn primary-btn" onclick="copyLink()">🔗 复制链接</button>
+      <button class="share-btn" onclick="nativeShare()">📱 系统分享</button>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-mute);text-align:center">分享给朋友，让更多人发现好用工具</div>
+    <button class="share-btn" style="margin-top:12px;width:100%" onclick="closeModal('shareModal')">关闭</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="donateModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">❤️ 自愿打赏</div>
+    <img src="./pay-qr.jpg" class="donate-qr" alt="收款码" onclick="openQrFull()" onerror="this.style.background='#f0f0f0'">
+    <p class="donate-note">所有功能完全免费<br><strong>长按二维码 → 微信扫一扫</strong><br>或点击二维码放大扫码<br>您的支持是持续更新的动力 🙏</p>
+    <button class="share-btn primary-btn" style="margin-top:14px;width:100%;border:none" onclick="closeModal('donateModal')">关闭</button>
+  </div>
+</div>
+
+<div class="qr-overlay" id="qrOverlay" onclick="closeQrFull()">
+  <div onclick="event.stopPropagation()" style="display:flex;flex-direction:column;align-items:center">
+    <img src="./pay-qr.jpg" alt="收款码">
+    <p style="color:#fff;font-size:13px;margin-top:10px;">长按或截图 → 微信扫一扫</p>
+    <button class="qr-close" onclick="closeQrFull()">✕ 关闭</button>
+  </div>
+</div>
+
+<div class="tool-sheet" id="toolSheet">
+  <div class="tool-sheet-nav">
+    <button class="icon-btn" onclick="closeTool()">←</button>
+    <div class="tool-sheet-title" id="toolSheetTitle"></div>
+    <button class="icon-btn" onclick="openDonate()">❤️</button>
+  </div>
+  <iframe id="toolFrame" src="" allow="clipboard-write;camera;microphone"></iframe>
+</div>
+
+<script>
+const TOOLS = [
+  { id:'prompt-optimizer', name:'AI提示词库', emoji:'✨', desc:'精选模板·8大分类·一键复制', cat:'productivity', badge:'hot', uses:0, url:'./prompt-optimizer' },
+  { id:'chat-screenshot', name:'聊天截图生成', emoji:'💬', desc:'微信风格·以假乱真', cat:'fun', badge:'hot', uses:12840, url:'./chat-screenshot' },
+  { id:'fortune', name:'今日运势', emoji:'🔮', desc:'每日一签·逢凶化吉', cat:'fun', badge:'new', uses:4320, url:'./fortune' },
+  { id:'mbti', name:'人格测试', emoji:'🧠', desc:'MBTI风格·认识自己', cat:'fun', badge:'hot', uses:8760, url:'./mbti' },
+  { id:'lottery', name:'随机抽签', emoji:'🎲', desc:'决策助手·聚会必备', cat:'fun', badge:null, uses:3210, url:'./lottery' },
+  { id:'pomodoro', name:'专注番茄钟', emoji:'⏱️', desc:'番茄工作法·提效利器', cat:'productivity', badge:null, uses:2890, url:'./pomodoro' },
+  { id:'history', name:'今日历史', emoji:'📅', desc:'历史上的今天·全球视野', cat:'fun', badge:null, uses:1650, url:'./history' },
+  { id:'qrcode', name:'二维码生成', emoji:'📱', desc:'链接转码·一键下载', cat:'util', badge:null, uses:5430, url:'./qrcode' },
+  { id:'unit', name:'单位换算', emoji:'📐', desc:'长度·重量·温度·货币', cat:'util', badge:'new', uses:980, url:'./unit' },
+  { id:'password', name:'密码生成器', emoji:'🔐', desc:'强密码·安全可靠', cat:'util', badge:'new', uses:2100, url:'./password' },
+  { id:'color', name:'颜色取色器', emoji:'🎨', desc:'调色板·HEX/RGB转换', cat:'util', badge:'new', uses:1340, url:'./color' },
+  { id:'json', name:'JSON格式化', emoji:'📋', desc:'代码美化·结构清晰', cat:'util', badge:'new', uses:760, url:'./json' },
+  { id:'compress', name:'图片压缩', emoji:'🖼️', desc:'无损压缩·减小体积', cat:'util', badge:'new', uses:1890, url:'./compress' },
+];
+
+let currentCat='all', searchQuery='';
+let favorites=JSON.parse(localStorage.getItem('tbox_favs')||'[]');
+let useCounts=JSON.parse(localStorage.getItem('tbox_uses')||'{}');
+let theme=localStorage.getItem('tbox_theme')||'light';
+let deferredInstall=null;
+
+function applyTheme(t){
+  theme=t;
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('themeBtn').textContent=t==='dark'?'☀️':'🌙';
+  localStorage.setItem('tbox_theme',t);
+}
+applyTheme(theme);
+document.getElementById('themeBtn').addEventListener('click',()=>applyTheme(theme==='dark'?'light':'dark'));
+
+function formatUses(n){return n>=10000?(n/10000).toFixed(1)+'万次':n.toLocaleString()+'次';}
+
+function renderGrid(){
+  const grid=document.getElementById('toolGrid'),empty=document.getElementById('emptyState'),q=searchQuery.toLowerCase();
+  let tools=TOOLS.filter(t=>{
+    if(currentCat==='fav')return favorites.includes(t.id);
+    if(currentCat!=='all'&&t.cat!==currentCat)return false;
+    if(q&&!t.name.includes(q)&&!t.desc.toLowerCase().includes(q))return false;
+    return true;
+  });
+  tools.sort((a,b)=>(useCounts[b.id]||b.uses)-(useCounts[a.id]||a.uses));
+  if(!tools.length){grid.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  grid.innerHTML=tools.map((t,i)=>{
+    const isFav=favorites.includes(t.id);
+    const uses=useCounts[t.id]?t.uses+useCounts[t.id]:t.uses;
+    const badge=t.badge==='hot'?'<span class="badge badge-hot">🔥 热门</span>':t.badge==='new'?'<span class="badge badge-new">✨ 新品</span>':'';
+    return '<div class="card '+(isFav?'fav-active':'')+'" onclick="openTool(\''+t.id+'\')" style="animation-delay:'+(i*0.04)+'s"><div class="card-top"><div class="card-emoji">'+t.emoji+'</div><button class="fav-btn '+(isFav?'active':'')+'" onclick="toggleFav(event,\''+t.id+'\')" title="'+(isFav?'取消收藏':'收藏')+'">'+(isFav?'⭐':'☆')+'</button></div><div class="card-name">'+t.name+'</div><div class="card-desc">'+t.desc+'</div><div class="card-footer">'+badge+'<div class="card-uses">已用 '+formatUses(uses)+'</div></div></div>';
+  }).join('');
+}
+
+document.getElementById('tabs').addEventListener('click',e=>{
+  const tab=e.target.closest('.tab');if(!tab)return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');currentCat=tab.dataset.cat;renderGrid();
+});
+
+document.querySelectorAll('.bnav-item[data-tab]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const t=btn.dataset.tab;
+    if(t==='home'){currentCat='all';setActiveTab('all');renderGrid();}
+    if(t==='fav'){currentCat='fav';setActiveTab('fav');renderGrid();}
+  });
+});
+
+function setActiveTab(cat){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.cat===cat));}
+
+document.getElementById('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;renderGrid();});
+
+function toggleFav(e,id){
+  e.stopPropagation();
+  const idx=favorites.indexOf(id);
+  if(idx>=0){favorites.splice(idx,1);toast('已取消收藏');}
+  else{favorites.push(id);toast('⭐ 已收藏');}
+  localStorage.setItem('tbox_favs',JSON.stringify(favorites));renderGrid();
+}
+
+let toolOpenCount=parseInt(localStorage.getItem('tbox_open_count')||'0');
+
+function openTool(id){
+  const t=TOOLS.find(x=>x.id===id);if(!t)return;
+  useCounts[id]=(useCounts[id]||0)+1;
+  localStorage.setItem('tbox_uses',JSON.stringify(useCounts));
+  document.getElementById('toolSheetTitle').textContent=t.emoji+' '+t.name;
+  document.getElementById('toolFrame').src=t.url;
+  document.getElementById('toolSheet').classList.add('open');
+  document.body.style.overflow='hidden';
+  toolOpenCount++;localStorage.setItem('tbox_open_count',toolOpenCount);
+  if(toolOpenCount%5===0)setTimeout(()=>openDonate(),800);
+}
+
+function closeTool(){
+  document.getElementById('toolSheet').classList.remove('open');
+  document.getElementById('toolFrame').src='';
+  document.body.style.overflow='';renderGrid();
+}
+
+function openShare(){document.getElementById('shareModal').classList.add('open');}
+function openDonate(){document.getElementById('donateModal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function openQrFull(){document.getElementById('qrOverlay').classList.add('show');document.body.style.overflow='hidden';}
+function closeQrFull(){document.getElementById('qrOverlay').classList.remove('show');document.body.style.overflow='';}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+document.getElementById('shareNavBtn').addEventListener('click',openShare);
+
+function copyLink(){
+  navigator.clipboard.writeText('https://daily-toolbox.pages.dev').then(()=>toast('🔗 链接已复制'));
+  closeModal('shareModal');
+}
+function nativeShare(){
+  if(navigator.share){navigator.share({title:'天天工具箱',text:'免费实用工具集，快来用用看！',url:'https://daily-toolbox.pages.dev'});}
+  else{copyLink();}
+  closeModal('shareModal');
+}
+
+function toast(msg){
+  const wrap=document.getElementById('toastWrap'),el=document.createElement('div');
+  el.className='toast';el.textContent=msg;wrap.appendChild(el);
+  setTimeout(()=>el.remove(),2200);
+}
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredInstall=e;
+  document.getElementById('installBanner').classList.add('show');
+});
+document.getElementById('installBtn').addEventListener('click',()=>{
+  if(!deferredInstall)return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(()=>{
+    document.getElementById('installBanner').classList.remove('show');deferredInstall=null;
+  });
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBanner').classList.remove('show');
+  toast('🎉 已添加到主屏幕！');
+});
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
+
+renderGrid();
+</script>
+</body>
+</html>

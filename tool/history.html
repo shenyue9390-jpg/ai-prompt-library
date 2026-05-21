@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>今日历史</title>
+<style>
+:root {
+  --primary: #ff6b35;
+  --primary-light: #ff8f5e;
+  --bg: #faf8f5;
+  --bg-card: #ffffff;
+  --text: #1a1410;
+  --text-sub: #6b5e52;
+  --text-mute: #a89a8e;
+  --border: rgba(0,0,0,0.07);
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 40px;
+}
+.container {
+  width: 100%;
+  max-width: 420px;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-sub);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 0;
+  transition: color 0.2s;
+}
+.back-link:hover { color: var(--primary); }
+.back-link svg { width: 16px; height: 16px; fill: currentColor; }
+
+.header { margin: 12px 0 4px; }
+.header .date-display {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.header .subtitle {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.event-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  border: 1px solid var(--border);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.event-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+
+.year-badge {
+  flex-shrink: 0;
+  width: 60px;
+  height: 36px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+}
+.event-body { flex: 1; min-width: 0; }
+.event-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--text);
+}
+.event-desc {
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+.share-btn {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 28px auto 0;
+  padding: 12px 0;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.15s;
+}
+.share-btn:hover { background: var(--primary-light); }
+.share-btn:active { transform: scale(0.97); }
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 50px;
+  font-size: 14px;
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(.22,.61,.36,1), opacity 0.35s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.fallback-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-mute);
+  margin: 16px 0 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 460px) {
+  body { padding: 14px 12px 30px; }
+  .header .date-display { font-size: 21px; }
+}
+[data-theme="dark"] {
+  --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+  --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+<div class="container">
+
+<a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+
+<div class="header">
+  <div class="date-display" id="dateDisplay"></div>
+  <div class="subtitle">历史上的今天，曾经发生过这些事…</div>
+</div>
+
+<div class="events-list" id="eventsList"></div>
+
+<div class="fallback-note" id="fallbackNote" style="display:none;">* 部分事件为相近日期的历史记录</div>
+
+<div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+(function() {
+
+const DATA = {
+  "1-1": [
+    { year: "1788年", title: "《泰晤士报》首次出版", desc: "英国历史最悠久的报纸之一《泰晤士报》在伦敦创刊，最初名为《世界纪事日报》。" },
+    { year: "1801年", title: "大不列颠与爱尔兰联合王国成立", desc: "《1800年联合法案》生效，大不列颠王国与爱尔兰王国正式合并，成立联合王国。" },
+    { year: "1863年", title: "美国《解放宣言》生效", desc: "美国总统林肯签署的《解放宣言》正式生效，宣布南方叛乱州的奴隶获得自由。美国总统林肯签署的《解放宣言》正式生效，宣布南方叛乱州的奴隶获得自由。" },
+  ],
+  "1-9": [
+    { year: "1793年", title: "首次载人氢气球飞行", desc: "法国人让-皮埃尔·布朗夏尔在美国费城进行了首次载人氢气球飞行，乔治·华盛顿在场观看。" },
+    { year: "1914年", title: "福特汽车公司宣布8小时工作制", desc: "亨利·福特宣布福特汽车公司将实行每日5美元最低工资和8小时工作制，引发行业革命。" },
+    { year: "2005年", title: "苏丹南北和平协议签署", desc: "苏丹政府与南部反政府武装签署《全面和平协议》，结束了长达21年的苏丹内战。" },
+  ],
+  "2-14": [
+    { year: "270年", title: "圣瓦伦丁殉道", desc: "圣瓦伦丁在罗马被处决，后世将这一天定为情人节，以纪念他的爱与牺牲精神。" },
+    { year: "1912年", title: "亚利桑那州成为美国第48州", desc: "亚利桑那准州正式加入美国联邦，成为美国的第48个州，也是美国本土最后一个加入的州。" },
+    { year: "2018年", title: "美国佛罗里达校园枪击案", desc: "一名枪手在佛罗里达州帕克兰的玛乔丽·斯通曼·道格拉斯高中开枪，造成17人死亡。" },
+  ],
+  "3-8": [
+    { year: "1917年", title: "国际妇女节引发二月革命", desc: "俄国彼得格勒的女工举行示威游行，抗议食品短缺和战争，点燃了俄国二月革命的导火索。" },
+    { year: "1965年", title: "美国首批战斗部队抵达越南", desc: "美国海军陆战队第9远征旅在越南岘港登陆，标志着美国地面部队大规模卷入越战的开始。" },
+  ],
+  "4-1": [
+    { year: "1976年", title: "史蒂夫·乔布斯与沃兹尼亚克创立苹果公司", desc: "史蒂夫·乔布斯、史蒂夫·沃兹尼亚克和罗纳德·韦恩共同创立了苹果计算机公司，推出Apple I电脑。" },
+    { year: "2001年", title: "中美南海撞机事件", desc: "美国EP-3侦察机与中国歼-8战斗机在南海相撞，中方飞行员王伟牺牲，事件引发中美外交危机。" },
+  ],
+  "5-1": [
+    { year: "1886年", title: "芝加哥干草市场暴动", desc: "美国芝加哥工人为争取8小时工作制举行大规模罢工，随后发生暴力冲突，后世将5月1日定为国际劳动节。" },
+    { year: "1931年", title: "纽约帝国大厦落成", desc: "纽约帝国大厦正式开放，高381米，成为当时世界上最高的建筑，这一纪录保持了近40年。" },
+    { year: "2011年", title: "本·拉登被击毙", desc: "美国总统奥巴马宣布，基地组织头目奥萨马·本·拉登在巴基斯坦阿伯塔巴德被美军海豹突击队击毙。" },
+  ],
+  "5-4": [
+    { year: "1919年", title: "五四运动爆发", desc: "北京学生为抗议巴黎和会将德国在山东权益转交日本，举行示威游行，五四运动成为中国现代史的重要转折点。" },
+    { year: "1970年", title: "肯特州立大学枪击事件", desc: "美国俄亥俄州国民警卫队在肯特州立大学向反战示威学生开枪，造成4死9伤，引发全美抗议。" },
+  ],
+  "5-19": [
+    { year: "1536年", title: "安妮·博林被处决", desc: "英格兰国王亨利八世的第二任妻子在伦敦塔被斩首，被控通奸、叛国等罪名，距其加冕仅三年。" },
+    { year: "1921年", title: "美国国会通过《紧急限额法》", desc: "美国历史上首次通过限制移民的法律，规定了基于国籍的移民配额制度，大幅限制南欧和东欧移民。" },
+    { year: "1961年", title: "金星探测器首次飞越", desc: "苏联的金星1号探测器成为首个飞越金星的航天器，虽然与地球失去联系，但标志着行星探测的重要里程碑。" },
+  ],
+  "5-20": [
+    { year: "1498年", title: "达·伽马抵达印度卡利卡特", desc: "葡萄牙航海家瓦斯科·达·伽马绕过好望角抵达印度卡利卡特，开辟了欧洲直通亚洲的海上航线，开启大航海时代新篇章。" },
+    { year: "1927年", title: "林白飞越大西洋", desc: "美国飞行员查尔斯·林白驾驶“圣路易斯精神号”从纽约起飞，历时33.5小时，首次完成单人无着陆横跨大西洋飞行。" },
+    { year: "1506年", title: "哥伦布逝世", desc: "发现新大陆的意大利航海家克里斯托弗·哥伦布在西班牙巴利亚多利德逝世，享年约54岁。" },
+  ],
+  "6-6": [
+    { year: "1944年", title: "诺曼底登陆（D-Day）", desc: "盟军在法国诺曼底海滩发动大规模登陆作战，代号“霸王行动”，成为二战欧洲战场的重大转折点。" },
+    { year: "1971年", title: "苏联联盟11号发射升空", desc: "苏联发射联盟11号飞船，三名宇航员成功进入礼炮1号空间站，但在返航时因舱内失压不幸全部遇难。" },
+  ],
+  "7-4": [
+    { year: "1776年", title: "美国独立宣言通过", desc: "北美大陆会议通过《独立宣言》，正式宣布13个殖民地脱离英国独立，这一天成为美国国庆日。" },
+    { year: "1826年", title: "美国第二任与第三任总统同日逝世", desc: "美国第二任总统约翰·亚当斯与第三任总统托马斯·杰斐逊于同日逝世，恰好是《独立宣言》通过50周年。" },
+  ],
+  "7-20": [
+    { year: "1969年", title: "阿波罗11号登月", desc: "美国宇航员尼尔·阿姆斯特朗和巴兹·奥尔德林乘坐阿波罗11号登上月球，阿姆斯特朗留下著名名言：“这是个人的一小步，却是人类的一大步。”" },
+    { year: "1976年", title: "海盗1号着陆火星", desc: "美国海盗1号探测器成功在火星表面软着陆，成为首个成功着陆火星并传回图像的探测器。" },
+  ],
+  "8-15": [
+    { year: "1945年", title: "日本宣布无条件投降", desc: "日本裕仁天皇通过广播宣布接受《波茨坦公告》，无条件投降，第二次世界大战就此结束。" },
+    { year: "1947年", title: "印度独立", desc: "印度正式脱离英国殖民统治成为独立国家，贾瓦哈拉尔·尼赫鲁就任首任总理。同日实行印巴分治。" },
+  ],
+  "9-1": [
+    { year: "1939年", title: "德国入侵波兰，二战爆发", desc: "纳粹德国闪击波兰，英法随后对德宣战，第二次世界大战全面爆发。" },
+    { year: "1983年", title: "大韩航空007号班机被击落", desc: "苏联战斗机在库页岛附近击落偏离航线的韩国客机，机上269人全部遇难，引发国际强烈谴责。" },
+    { year: "2004年", title: "别斯兰人质事件结束", desc: "俄罗斯北奥塞梯别斯兰第一中学人质危机在激烈交火中结束，超过330人死亡，其中半数为儿童。" },
+  ],
+  "10-1": [
+    { year: "1949年", title: "中华人民共和国成立", desc: "毛泽东在天安门城楼宣告中华人民共和国中央人民政府成立，标志着中国历史进入新纪元。" },
+    { year: "1946年", title: "纽伦堡审判宣判", desc: "纽伦堡国际军事法庭对纳粹德国主要战犯作出判决，12人被判处死刑，确立了“反人类罪”等国际法原则。" },
+  ],
+  "11-11": [
+    { year: "1918年", title: "第一次世界大战结束", desc: "德国与协约国在法国贡比涅签署停战协定，第一次世界大战于上午11时正式结束，后人称“十一月的第十一天的第十一个小时”" },
+    { year: "1620年", title: "《五月花号公约》签署", desc: "前往北美的英国清教徒在五月花号船上签署《五月花号公约》，奠定了美国自治政府的基础。" },
+  ],
+  "12-25": [
+    { year: "800年", title: "查理曼加冕为罗马皇帝", desc: "法兰克国王查理曼在罗马圣彼得大教堂被教皇利奥三世加冕为“罗马人的皇帝”，标志着神圣罗马帝国的开端。" },
+    { year: "1991年", title: "苏联解体", desc: "苏联总统戈尔巴乔夫宣布辞职，苏联最高苏维埃宣布苏联停止存在，红色帝国正式解体。" },
+  ],
+  "12-31": [
+    { year: "1600年", title: "英国东印度公司成立", desc: "英国女王伊丽莎白一世颁发皇家特许状，授权成立英国东印度公司，开启英国在印度和亚洲的殖民扩张。" },
+    { year: "1879年", title: "爱迪生首次公开展示白炽灯", desc: "托马斯·爱迪生在纽约门洛帕克实验室首次公开展示他的白炽灯照明系统，开启电气照明时代。" },
+    { year: "1999年", title: "巴拿马运河主权移交", desc: "美国将巴拿马运河的管理权和控制权正式移交给巴拿马政府，结束了美国对运河近一个世纪的控制。" },
+  ],
+};
+
+const FALLBACK_EVENTS = [
+  { year: "约公元前", title: "人类开始使用火", desc: "远古人类开始有意使用和控制火，这是人类文明发展史上最重要的里程碑之一。" },
+  { year: "约1450年", title: "古腾堡发明印刷机", desc: "约翰内斯·古腾堡在欧洲发明了活字印刷机，推动了知识和思想的广泛传播。" },
+  { year: "1876年", title: "亚历山大·贝尔获得电话专利", desc: "亚历山大·格雷厄姆·贝尔获得美国电话专利，彻底改变了人类的通信方式。" },
+  { year: "1895年", title: "伦琴发现X射线", desc: "德国物理学家威廉·伦琴在实验中发现了X射线，开创了医学影像诊断的新纪元。" },
+  { year: "1903年", title: "莱特兄弟首次动力飞行", desc: "威尔伯·莱特和奥维尔·莱特在北卡罗来纳州成功进行了首次有动力、可操控的持续飞行。" },
+  { year: "1905年", title: "爱因斯坦提出狭义相对论", desc: "阿尔伯特·爱因斯坦发表《论动体的电动力学》，提出狭义相对论，彻底改变了物理学。" },
+  { year: "1928年", title: "弗莱明发现青霉素", desc: "亚历山大·弗莱明在实验中意外发现青霉素，开启了抗生素时代，挽救了无数生命。" },
+  { year: "1942年", title: "曼哈顿计划启动", desc: "美国启动曼哈顿计划，秘密研发原子弹，最终在1945年成功试爆并投入使用。" },
+  { year: "1953年", title: "DNA双螺旋结构被发现", desc: "沃森和克里克在《自然》杂志发表DNA双螺旋结构模型，揭开了生命遗传的奥秘。" },
+  { year: "1957年", title: "苏联发射斯普特尼克1号", desc: "苏联成功发射世界上第一颗人造卫星斯普特尼克1号，开启了人类的太空时代。" },
+  { year: "1963年", title: "马丁·路德·金发表《我有一个梦想》", desc: "马丁·路德·金在华盛顿林肯纪念堂前发表著名演说《我有一个梦想》，推动美国民权运动。" },
+  { year: "1977年", title: "苹果II电脑发布", desc: "苹果公司发布Apple II，成为首款大规模生产的个人电脑，推动个人电脑革命。" },
+  { year: "1989年", title: "万维网（WWW）诞生", desc: "蒂姆·伯纳斯-李提出了万维网（World Wide Web）的构想，从根本上改变了人类获取信息的方式。" },
+  { year: "1994年", title: "英吉利海峡隧道通车", desc: "连接英国和法国的英吉利海峡隧道正式开通，这是人类历史上最长的海底隧道。" },
+  { year: "1997年", title: "克隆羊多莉诞生", desc: "英国科学家宣布成功克隆出绵羊多莉，这是首次从成年体细胞克隆出哺乳动物，引发生物伦理讨论。" },
+  { year: "2001年", title: "维基百科正式上线", desc: "维基百科正式上线运行，开创了开放协作的在线百科全书模式，成为全球最大的知识库之一。" },
+  { year: "2012年", title: "好奇号探测器登陆火星", desc: "美国NASA的好奇号火星车成功在火星盖尔陨石坑着陆，开启了火星表面详细探测的新阶段。" },
+  { year: "2015年", title: "巴黎气候协定达成", desc: "196个国家在巴黎达成《巴黎气候协定》，共同承诺应对气候变化，限制全球气温升幅。" },
+];
+
+function getMonthDay() {
+  var d = new Date();
+  return (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function formatDateDisplay() {
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = d.getMonth() + 1;
+  var day = d.getDate();
+  return '今天是 ' + y + '年' + m + '月' + day + '日';
+}
+
+function getEventsForDate(key) {
+  if (DATA[key]) return DATA[key];
+  return null;
+}
+
+function pickRandomFallback(count) {
+  var pool = FALLBACK_EVENTS.slice();
+  var result = [];
+  for (var i = 0; i < count; i++) {
+    if (pool.length === 0) break;
+    var idx = Math.floor(Math.random() * pool.length);
+    result.push(pool.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
+function render() {
+  var md = getMonthDay();
+  document.getElementById('dateDisplay').textContent = formatDateDisplay();
+
+  var events = getEventsForDate(md);
+  var isFallback = false;
+  if (!events) {
+    isFallback = true;
+    events = pickRandomFallback(3);
+  }
+
+  var listEl = document.getElementById('eventsList');
+  var html = '';
+  for (var i = 0; i < events.length; i++) {
+    var e = events[i];
+    html += '<div class="event-card">';
+    html += '  <div class="year-badge">' + e.year + '</div>';
+    html += '  <div class="event-body">';
+    html += '    <div class="event-title">' + e.title + '</div>';
+    html += '    <div class="event-desc">' + e.desc + '</div>';
+    html += '  </div>';
+    html += '</div>';
+  }
+  listEl.innerHTML = html;
+
+  var noteEl = document.getElementById('fallbackNote');
+  if (isFallback) {
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+}
+
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() {
+    el.classList.remove('show');
+  }, 2200);
+}
+
+render();
+
+})();
+</script>
+</body>
+</html>

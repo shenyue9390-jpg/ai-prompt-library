@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日运势</title>
+<style>
+  :root {
+    --primary:#ff6b35;
+    --primary-light:#ff8f5e;
+    --bg:#faf8f5;
+    --bg-card:#ffffff;
+    --text:#1a1410;
+    --text-sub:#6b5e52;
+    --text-mute:#a89a8e;
+    --border:rgba(0,0,0,0.07);
+    --radius:18px;
+    --radius-sm:10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Noto Sans SC','PingFang SC',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 16px 40px;
+  }
+  .container {
+    width:100%;
+    max-width:420px;
+  }
+  .top-bar {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:28px;
+  }
+  .top-bar a {
+    color:var(--primary);
+    text-decoration:none;
+    font-size:14px;
+    font-weight:500;
+    transition:opacity .2s;
+  }
+  .top-bar a:hover { opacity:.7; }
+  .top-bar .title {
+    font-size:18px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .card {
+    background:var(--bg-card);
+    border-radius:var(--radius);
+    padding:32px 24px;
+    box-shadow:0 2px 16px rgba(0,0,0,.04);
+    border:1px solid var(--border);
+    text-align:center;
+  }
+  .prompt-icon {
+    font-size:56px;
+    margin-bottom:12px;
+  }
+  .prompt-title {
+    font-size:20px;
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .prompt-desc {
+    font-size:14px;
+    color:var(--text-mute);
+    line-height:1.6;
+    margin-bottom:24px;
+  }
+  .btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:12px 28px;
+    border:none;
+    border-radius:var(--radius-sm);
+    font-size:15px;
+    font-weight:600;
+    font-family:inherit;
+    cursor:pointer;
+    transition:all .2s;
+    background:var(--primary);
+    color:#fff;
+    line-height:1.4;
+  }
+  .btn:hover:not(:disabled) { background:var(--primary-light); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn.outline {
+    background:transparent;
+    color:var(--primary);
+    border:1.5px solid var(--primary);
+  }
+  .btn.outline:hover:not(:disabled) { background:rgba(255,107,53,.06); }
+  .btn-group {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:4px;
+  }
+  .fortune-stars {
+    font-size:32px;
+    letter-spacing:2px;
+    margin-bottom:6px;
+  }
+  .fortune-level {
+    font-size:22px;
+    font-weight:700;
+    margin-bottom:12px;
+  }
+  .fortune-icon {
+    font-size:48px;
+    margin-bottom:8px;
+  }
+  .fortune-advice {
+    font-size:14px;
+    line-height:1.7;
+    color:var(--text-sub);
+    margin:12px 0 20px;
+    padding:14px;
+    background:var(--bg);
+    border-radius:var(--radius-sm);
+    text-align:left;
+  }
+  .fortune-advice strong {
+    display:block;
+    margin-bottom:4px;
+    font-size:13px;
+    color:var(--text-mute);
+  }
+  .fortune-action {
+    font-size:14px;
+    padding:12px 16px;
+    border-radius:var(--radius-sm);
+    margin-bottom:20px;
+    font-weight:500;
+  }
+  .generated-notice {
+    font-size:13px;
+    color:var(--text-mute);
+    margin-bottom:12px;
+  }
+  .footer {
+    margin-top:24px;
+    text-align:center;
+    font-size:12px;
+    color:var(--text-mute);
+  }
+  .hidden { display:none; }
+  [data-theme="dark"] {
+    --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+    --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+  }
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+<div class="container" id="app">
+  <div class="top-bar">
+    <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+    <span class="title">每日运势</span>
+  </div>
+
+  <!-- 未生成状态 -->
+  <div class="card" id="promptBox">
+    <div class="prompt-icon">🔮</div>
+    <div class="prompt-title">今日运势待开启</div>
+    <div class="prompt-desc">点击下方按钮，查看今日专属运势指引</div>
+    <button class="btn" id="generateBtn">🎯 查看今日运势</button>
+  </div>
+
+  <!-- 已生成状态 -->
+  <div class="card hidden" id="resultBox">
+    <div class="generated-notice" id="expiredNotice">今日运势已生成，明天再来~</div>
+    <div class="fortune-icon" id="resultIcon"></div>
+    <div class="fortune-stars" id="resultStars"></div>
+    <div class="fortune-level" id="resultLevel"></div>
+    <div class="fortune-advice" id="resultAdvice"><strong>💡 运势解读</strong></div>
+    <div class="fortune-action" id="resultAction"></div>
+    <div class="btn-group">
+      <button class="btn" id="viewAgainBtn" disabled>🎯 查看今日运势</button>
+      <button class="btn outline" id="shareBtn">📤 分享运势</button>
+    </div>
+  </div>
+
+  <div class="footer">每日运势 · 仅供参考 · 保持好心情最重要 🌞</div>
+</div>
+
+<script>
+(function(){
+  const LEVELS = [
+    { level: 0, stars: '⭐',          label: '诸事不宜', color: '#c0392b', bg: '#fdf0ef', emoji: '🌧️', advice: '今日宜静不宜动，凡事多加小心。避免重大决策，沉稳应对突发状况。耐心等待，时机自会到来。', action: '⛔ 宜静养身心，忌冲动行事' },
+    { level: 1, stars: '⭐⭐',        label: '小凶',     color: '#e67e22', bg: '#fef5ec', emoji: '🌥️', advice: '今日运势偏低，做事需多留个心眼。财运平平，不宜投资。人际关系上少说多听，避免口舌之争。', action: '⚠️ 宜谨慎守成，忌盲目冒进' },
+    { level: 2, stars: '⭐⭐⭐',      label: '中平',     color: '#7f8c8d', bg: '#f4f5f5', emoji: '☁️', advice: '今日运势中规中矩，无大喜亦无大忧。按部就班完成分内之事即可。适合整理旧物、规划未来。', action: '➡️ 宜稳扎稳打，忌好高骛远' },
+    { level: 3, stars: '⭐⭐⭐⭐',    label: '吉星高照', color: '#27ae60', bg: '#edf9f0', emoji: '☀️', advice: '今日吉星高照，诸事顺遂。贵人运不错，适合社交与合作。财运亨通，可能会有意外之喜。抓住机会，勇敢前行！', action: '✅ 宜主动出击，忌犹豫不决' },
+    { level: 4, stars: '⭐⭐⭐⭐⭐', label: '大吉大利', color: '#d4a017', bg: '#fef9e7', emoji: '🌈', advice: '今日运势爆棚！万事如意，心想事成。是开启新项目、表达心意、签约合作的最佳时机。好运加持，放手去做吧！', action: '🏆 宜大胆行动，忌畏首畏尾' },
+  ];
+
+  const LS_DATE_KEY = 'fortune_date';
+  const LS_RESULT_KEY = 'fortune_result';
+
+  const promptBox = document.getElementById('promptBox');
+  const resultBox = document.getElementById('resultBox');
+  const generateBtn = document.getElementById('generateBtn');
+  const viewAgainBtn = document.getElementById('viewAgainBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const expiredNotice = document.getElementById('expiredNotice');
+  const resultIcon = document.getElementById('resultIcon');
+  const resultStars = document.getElementById('resultStars');
+  const resultLevel = document.getElementById('resultLevel');
+  const resultAdvice = document.getElementById('resultAdvice');
+  const resultAction = document.getElementById('resultAction');
+
+  const today = new Date().toDateString();
+
+  function pickRandom() {
+    return LEVELS[Math.floor(Math.random() * LEVELS.length)];
+  }
+
+  function renderResult(data) {
+    resultIcon.textContent = data.emoji;
+    resultStars.textContent = data.stars;
+    resultLevel.textContent = data.label;
+    resultLevel.style.color = data.color;
+    resultAdvice.innerHTML = '<strong>💡 运势解读</strong>' + data.advice;
+    resultAction.textContent = data.action;
+    resultAction.style.background = data.bg;
+    resultAction.style.color = data.color;
+  }
+
+  function showResult(data) {
+    renderResult(data);
+    promptBox.classList.add('hidden');
+    resultBox.classList.remove('hidden');
+    expiredNotice.textContent = '今日运势已生成，明天再来~';
+  }
+
+  // 检查是否已经生成过
+  const savedDate = localStorage.getItem(LS_DATE_KEY);
+  const savedResult = localStorage.getItem(LS_RESULT_KEY);
+
+  if (savedDate === today && savedResult) {
+    try {
+      const data = JSON.parse(savedResult);
+      showResult(data);
+    } catch(e) {
+      // fall through
+    }
+  }
+
+  // 生成运势
+  generateBtn.addEventListener('click', function() {
+    const data = pickRandom();
+    localStorage.setItem(LS_DATE_KEY, today);
+    localStorage.setItem(LS_RESULT_KEY, JSON.stringify(data));
+    showResult(data);
+  });
+
+  // 分享运势
+  shareBtn.addEventListener('click', function() {
+    const saved = localStorage.getItem(LS_RESULT_KEY);
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      const text = [
+        '🔮 今日运势',
+        '',
+        data.emoji + ' ' + data.stars,
+        data.label,
+        '',
+        '💡 ' + data.advice,
+        '',
+        data.action,
+        '',
+        '—— 每日运势 · 仅供参考',
+      ].join('\n');
+
+      if (navigator.share) {
+        navigator.share({ text: text }).catch(() => {});
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('运势已复制到剪贴板，快去分享给朋友吧！');
+        }).catch(() => {});
+      } else {
+        // 兜底：选中文本
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('运势已复制到剪贴板，快去分享给朋友吧！');
+      }
+    } catch(e) {}
+  });
+
+})();
+</script>
+</body>
+</html>

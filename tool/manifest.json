@@ -1,0 +1,10 @@
+{
+  "name": "天天工具箱",
+  "short_name": "天天工具箱",
+  "description": "实用在线工具集 - 聊天截图生成、运势测试、抽签、番茄钟、文案模板",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f12",
+  "theme_color": "#6366f1",
+  "icons": []
+}

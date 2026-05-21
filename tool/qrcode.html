@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二维码生成器</title>
+<style>
+  :root {
+    --primary: #ff6b35;
+    --primary-light: #ff8f5e;
+    --bg: #faf8f5;
+    --bg-card: #ffffff;
+    --text: #1a1410;
+    --text-sub: #6b5e52;
+    --text-mute: #a89a8e;
+    --border: rgba(0,0,0,0.07);
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .container {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-sub);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 20px;
+    transition: color .2s;
+  }
+  .back-link:hover { color: var(--primary); }
+  .back-link::before {
+    content: "←";
+    font-size: 16px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 24px;
+  }
+  .input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .input-group input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .input-group input:focus {
+    border-color: var(--primary);
+  }
+  .input-group input::placeholder {
+    color: var(--text-mute);
+  }
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--primary-light); }
+  .qr-display {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 20px;
+    border-radius: var(--radius-sm);
+    border: 2px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    background: #fff;
+  }
+  .qr-display img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .qr-placeholder {
+    color: var(--text-mute);
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .btn-download-wrap {
+    text-align: center;
+    margin-top: 4px;
+  }
+  .btn-download {
+    display: none;
+    padding: 12px 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text);
+    transition: background .2s, transform .1s;
+  }
+  .btn-download:active { transform: scale(.97); }
+  .btn-download:hover { background: #f0ece8; }
+  .btn-download.show { display: inline-block; }
+  .error-msg {
+    display: none;
+    text-align: center;
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .error-msg.show { display: block; }
+[data-theme="dark"] {
+  --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+  --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+
+<div class="container">
+  <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+  <h1>二维码生成器</h1>
+  <p class="subtitle">输入链接或文本，一键生成二维码</p>
+
+  <div class="input-group">
+    <input type="text" id="qrInput" placeholder="输入链接或文本..." value="https://">
+    <button class="btn btn-primary" id="generateBtn">生成二维码</button>
+  </div>
+
+  <div class="qr-display" id="qrDisplay">
+    <div class="qr-placeholder" id="placeholder">输入内容后点击生成</div>
+    <img id="qrImage" alt="" style="display:none">
+  </div>
+
+  <div class="btn-download-wrap">
+    <button class="btn-download" id="downloadBtn">📥 下载二维码</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<script>
+  (function() {
+    const input = document.getElementById('qrInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const qrImage = document.getElementById('qrImage');
+    const placeholder = document.getElementById('placeholder');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const errorMsg = document.getElementById('errorMsg');
+
+    function generate() {
+      const text = input.value.trim();
+      if (!text) {
+        showError('请输入链接或文本');
+        return;
+      }
+      hideError();
+      const encoded = encodeURIComponent(text);
+      const url = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encoded;
+      qrImage.onload = function() {
+        qrImage.style.display = 'block';
+        placeholder.style.display = 'none';
+        downloadBtn.classList.add('show');
+        hideError();
+      };
+      qrImage.onerror = function() {
+        qrImage.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.textContent = '二维码生成失败';
+        downloadBtn.classList.remove('show');
+        showError('生成失败，请检查网络后重试');
+      };
+      qrImage.src = url;
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('show');
+    }
+
+    function hideError() {
+      errorMsg.classList.remove('show');
+      errorMsg.textContent = '';
+    }
+
+    generateBtn.addEventListener('click', generate);
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') generate();
+    });
+
+    downloadBtn.addEventListener('click', function() {
+      const src = qrImage.src;
+      if (!src) return;
+      const link = document.createElement('a');
+      link.href = src;
+      link.download = 'qrcode.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    hideError();
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON 格式化工具</title>
+<style>
+:root {
+  --primary: #ff6b35;
+  --primary-light: #ff8f5e;
+  --bg: #faf8f5;
+  --bg-card: #ffffff;
+  --text: #1a1410;
+  --text-sub: #6b5e52;
+  --text-mute: #a89a8e;
+  --border: rgba(0,0,0,0.07);
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.container {
+  width: 100%;
+  max-width: 420px;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-sub);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+  transition: color .2s;
+}
+.back-link:hover { color: var(--primary); }
+h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: -.3px;
+}
+.sub { color: var(--text-mute); font-size: 14px; margin-bottom: 20px; }
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+}
+textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+  transition: border-color .2s;
+}
+textarea:focus { border-color: var(--primary); }
+textarea::placeholder { color: var(--text-mute); font-family: 'Noto Sans SC', 'PingFang SC', sans-serif; }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
+.btn-success {
+  background: var(--bg-card);
+  color: #2e7d32;
+  border: 1.5px solid #c8e6c9;
+  cursor: default;
+}
+.btn-success:hover { transform: none; }
+.btn-copy {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btn-copy:hover { border-color: var(--primary); color: var(--primary); }
+.btn-clear {
+  background: transparent;
+  color: var(--text-mute);
+}
+.btn-clear:hover { color: #d32f2f; }
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  min-height: 24px;
+  margin-bottom: 8px;
+}
+.status-ok { color: #2e7d32; }
+.status-err { color: #d32f2f; }
+.output-wrap {
+  background: #f5f2ef;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  position: relative;
+}
+.output-wrap .label-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 0;
+}
+.output-wrap .label-bar label { margin-bottom: 0; }
+.output-wrap pre {
+  padding: 14px;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 60px;
+  color: var(--text);
+}
+.output-wrap pre:empty::before {
+  content: '等待输入…';
+  color: var(--text-mute);
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 13px;
+}
+.json-key { color: #881391; }
+.json-string { color: #0a8429; }
+.json-number { color: #d63200; }
+.json-boolean { color: #0550ae; }
+.json-null { color: #a89a8e; }
+.json-bracket { color: var(--text); }
+.line-num {
+  display: inline-block;
+  width: 28px;
+  text-align: right;
+  color: var(--text-mute);
+  user-select: none;
+  margin-right: 8px;
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  body { padding: 20px 12px; }
+  .actions { gap: 6px; }
+  .btn { padding: 7px 12px; font-size: 12px; }
+  h1 { font-size: 22px; }
+}
+[data-theme="dark"] {
+  --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+  --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+
+<div class="container">
+  <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+  <h1>JSON 格式化</h1>
+  <p class="sub">格式化、校验与压缩 JSON 数据</p>
+
+  <label for="json-input">输入 JSON</label>
+  <textarea id="json-input" placeholder='例如：
+{
+  "name": "工具集",
+  "version": 1.5,
+  "features": ["格式化","压缩","校验"],
+  "active": true
+}' spellcheck="false"></textarea>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="btn-format">&#10024; 格式化</button>
+    <button class="btn btn-secondary" id="btn-minify">&#128457; 压缩</button>
+    <button class="btn btn-copy" id="btn-copy">&#128203; 复制结果</button>
+    <button class="btn btn-clear" id="btn-clear">&#128465; 清空</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="output-wrap">
+    <div class="label-bar">
+      <label>输出</label>
+      <label id="line-count" style="font-weight:400;font-size:12px;color:var(--text-mute)"></label>
+    </div>
+    <pre id="output"></pre>
+  </div>
+</div>
+
+<script>
+(function() {
+  const input = document.getElementById('json-input');
+  const output = document.getElementById('output');
+  const status = document.getElementById('status');
+  const lineCount = document.getElementById('line-count');
+
+  function syntaxHighlight(json) {
+    if (typeof json === 'string') {
+      try { json = JSON.parse(json); } catch(e) { return escapeHtml(json); }
+    }
+    const str = JSON.stringify(json, null, 2);
+    return syntaxHighlightStr(str);
+  }
+
+  function syntaxHighlightStr(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"((?:\\.|[^"\\])*)"\s*:/g, '<span class="json-key">"$1"</span>:')
+      .replace(/"((?:\\.|[^"\\])*)"/g, '<span class="json-string">"$1"</span>')
+      .replace(/\b(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b/g, '<span class="json-number">$1</span>')
+      .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+      .replace(/\bnull\b/g, '<span class="json-null">$1</span>');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function getPositionInfo(jsonStr, idx) {
+    const before = jsonStr.slice(0, idx);
+    const line = (before.match(/\n/g) || []).length + 1;
+    const lastNewline = before.lastIndexOf('\n');
+    const col = idx - lastNewline;
+    return { line, col };
+  }
+
+  function format(jsonStr) {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      const formatted = JSON.stringify(parsed, null, 2);
+      output.innerHTML = syntaxHighlight(formatted);
+      const lines = formatted.split('\n').length;
+      lineCount.textContent = lines + ' 行';
+      status.innerHTML = '<span class="status-ok">&#10003; JSON 格式正确</span>';
+      return true;
+    } catch (e) {
+      const raw = jsonStr || '';
+      let msg = e.message;
+      const posMatch = e.message.match(/position\s+(\d+)/i);
+      if (posMatch) {
+        const pos = parseInt(posMatch[1], 10);
+        if (pos >= 0 && pos < raw.length) {
+          const info = getPositionInfo(raw, pos);
+          msg = '第 ' + info.line + ' 行第 ' + info.col + ' 列附近：' + e.message;
+        }
+      }
+      status.innerHTML = '<span class="status-err">&#10007; ' + escapeHtml(msg) + '</span>';
+      output.innerHTML = '';
+      lineCount.textContent = '';
+      return false;
+    }
+  }
+
+  function minify(jsonStr) {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      const minified = JSON.stringify(parsed);
+      output.innerHTML = escapeHtml(minified);
+      lineCount.textContent = '1 行';
+      status.innerHTML = '<span class="status-ok">&#10003; JSON 格式正确（已压缩）</span>';
+      return true;
+    } catch (e) {
+      const raw = jsonStr || '';
+      let msg = e.message;
+      const posMatch = e.message.match(/position\s+(\d+)/i);
+      if (posMatch) {
+        const pos = parseInt(posMatch[1], 10);
+        if (pos >= 0 && pos < raw.length) {
+          const info = getPositionInfo(raw, pos);
+          msg = '第 ' + info.line + ' 行第 ' + info.col + ' 列附近：' + e.message;
+        }
+      }
+      status.innerHTML = '<span class="status-err">&#10007; ' + escapeHtml(msg) + '</span>';
+      output.innerHTML = '';
+      lineCount.textContent = '';
+      return false;
+    }
+  }
+
+  document.getElementById('btn-format').addEventListener('click', function() {
+    format(input.value);
+  });
+
+  document.getElementById('btn-minify').addEventListener('click', function() {
+    minify(input.value);
+  });
+
+  document.getElementById('btn-copy').addEventListener('click', function() {
+    const text = output.textContent || output.innerText || '';
+    if (!text) {
+      status.innerHTML = '<span class="status-err">没有可复制的内容</span>';
+      return;
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() {
+        status.innerHTML = '<span style="color:#2e7d32;">&#10003; 已复制到剪贴板</span>';
+      }).catch(function() {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      status.innerHTML = '<span style="color:#2e7d32;">&#10003; 已复制到剪贴板</span>';
+    } catch(e) {
+      status.innerHTML = '<span class="status-err">复制失败，请手动选择文本复制</span>';
+    }
+    document.body.removeChild(ta);
+  }
+
+  document.getElementById('btn-clear').addEventListener('click', function() {
+    input.value = '';
+    output.innerHTML = '';
+    status.innerHTML = '';
+    lineCount.textContent = '';
+    input.focus();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      format(input.value);
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>单位换算</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  .container {
+    width: 100%;
+    max-width: 420px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    color: var(--text-sub);
+    padding: 6px 0;
+    margin-bottom: 20px;
+  }
+  .back-link:hover { color: var(--primary); }
+  .back-link svg { width: 16px; height: 16px; }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    flex-shrink: 0;
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: var(--bg-card);
+    color: var(--text-sub);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .tab.active {
+    background: var(--primary);
+    color: #fff;
+  }
+  .tab:hover:not(.active) { background: var(--border); }
+  .panel {
+    display: none;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 1px 4px var(--border);
+  }
+  .panel.active { display: block; }
+  .row-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .row-wrap .input-group { flex: 1; min-width: 0; }
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-mute);
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .input-group input,
+  .input-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: auto;
+  }
+  .input-group input:focus,
+  .input-group select:focus { border-color: var(--primary); }
+  .input-group input { -moz-appearance: textfield; }
+  .input-group input::-webkit-inner-spin-button,
+  .input-group input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .swap-btn {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-sub);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-top: 22px;
+  }
+  .swap-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(255,107,53,0.06);
+  }
+  .result-row {
+    margin-top: 12px;
+  }
+  .result-display {
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    word-break: break-all;
+  }
+  .result-display .num { color: var(--primary); }
+  @media (max-width: 420px) {
+    body { padding: 16px 12px 32px; }
+    .panel { padding: 16px; }
+    .row-wrap { gap: 8px; }
+    .swap-btn { width: 34px; height: 34px; font-size: 16px; }
+  }
+:root {
+  --primary: #ff6b35; --primary-light: #ff8f5e;
+  --bg: #faf8f5; --bg-card: #ffffff;
+  --text: #1a1410; --text-sub: #6b5e52; --text-mute: #a89a8e;
+  --border: rgba(0,0,0,0.1); --radius: 18px; --radius-sm: 10px;
+}
+
+[data-theme="dark"] {
+  --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+  --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+<div class="container">
+  <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+  <h1>单位换算</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
+</div>
+<script>
+(function(){
+  function $(s, p){ return (p||document).querySelector(s); }
+
+  const categories = [
+    {
+      id: 'length',
+      name: '长度',
+      units: [
+        { label: '米', value: 'm', toBase: v => v, fromBase: v => v },
+        { label: '千米', value: 'km', toBase: v => v * 1000, fromBase: v => v / 1000 },
+        { label: '厘米', value: 'cm', toBase: v => v / 100, fromBase: v => v * 100 },
+        { label: '毫米', value: 'mm', toBase: v => v / 1000, fromBase: v => v * 1000 },
+        { label: '英里', value: 'mi', toBase: v => v * 1609.344, fromBase: v => v / 1609.344 },
+        { label: '英尺', value: 'ft', toBase: v => v * 0.3048, fromBase: v => v / 0.3048 },
+        { label: '英寸', value: 'in', toBase: v => v * 0.0254, fromBase: v => v / 0.0254 },
+      ]
+    },
+    {
+      id: 'weight',
+      name: '重量',
+      units: [
+        { label: '千克', value: 'kg', toBase: v => v, fromBase: v => v },
+        { label: '克', value: 'g', toBase: v => v / 1000, fromBase: v => v * 1000 },
+        { label: '毫克', value: 'mg', toBase: v => v / 1e6, fromBase: v => v * 1e6 },
+        { label: '磅', value: 'lb', toBase: v => v * 0.45359237, fromBase: v => v / 0.45359237 },
+        { label: '盎司', value: 'oz', toBase: v => v * 0.028349523125, fromBase: v => v / 0.028349523125 },
+        { label: '斤', value: 'jin', toBase: v => v * 0.5, fromBase: v => v / 0.5 },
+        { label: '吨', value: 't', toBase: v => v * 1000, fromBase: v => v / 1000 },
+      ]
+    },
+    {
+      id: 'temperature',
+      name: '温度',
+      units: [
+        { label: '摄氏度(°C)', value: 'c', toBase: v => v, fromBase: v => v },
+        { label: '华氏度(°F)', value: 'f', toBase: v => (v - 32) * 5 / 9, fromBase: v => v * 9 / 5 + 32 },
+        { label: '开尔文(K)', value: 'k', toBase: v => v - 273.15, fromBase: v => v + 273.15 },
+      ]
+    },
+    {
+      id: 'area',
+      name: '面积',
+      units: [
+        { label: '平方米', value: 'sqm', toBase: v => v, fromBase: v => v },
+        { label: '平方千米', value: 'sqkm', toBase: v => v * 1e6, fromBase: v => v / 1e6 },
+        { label: '公顷', value: 'ha', toBase: v => v * 10000, fromBase: v => v / 10000 },
+        { label: '亩', value: 'mu', toBase: v => v * 666.6667, fromBase: v => v / 666.6667 },
+        { label: '平方英尺', value: 'sqft', toBase: v => v * 0.09290304, fromBase: v => v / 0.09290304 },
+        { label: '英亩', value: 'ac', toBase: v => v * 4046.8564224, fromBase: v => v / 4046.8564224 },
+      ]
+    }
+  ];
+
+  const tabsEl = document.getElementById('tabs');
+  const panelsEl = document.getElementById('panels');
+  let activeCat = categories[0].id;
+  const state = {}; // catId -> { from, to, val }
+
+  function initState(cat) {
+    if (!state[cat.id]) {
+      state[cat.id] = { from: cat.units[0].value, to: cat.units[1] ? cat.units[1].value : cat.units[0].value, val: '' };
+    }
+  }
+  categories.forEach(c => initState(c));
+
+  function getUnit(cat, value) {
+    return cat.units.find(u => u.value === value) || cat.units[0];
+  }
+
+  function convert(catId) {
+    const cat = categories.find(c => c.id === catId);
+    if (!cat) return;
+    const s = state[catId];
+    const el = document.getElementById('display-' + catId);
+    if (!el) return;
+    const fromUnit = getUnit(cat, s.from);
+    const toUnit = getUnit(cat, s.to);
+    const raw = s.val;
+    if (raw === '' || raw === '-' || raw === '.') {
+      el.innerHTML = '';
+      return;
+    }
+    const num = parseFloat(raw);
+    if (isNaN(num)) { el.innerHTML = ''; return; }
+    let result;
+    if (catId === 'temperature') {
+      // Convert to Celsius, then from Celsius to target
+      const celsius = fromUnit.toBase(num);
+      result = toUnit.fromBase(celsius);
+    } else {
+      const base = fromUnit.toBase(num);
+      result = toUnit.fromBase(base);
+    }
+    const precision = 10;
+    const rounded = parseFloat(result.toPrecision(precision));
+    el.innerHTML = `<span class="num">${raw}</span> ${fromUnit.label} = <span class="num">${rounded}</span> ${toUnit.label}`;
+  }
+
+  function buildPanel(cat) {
+    const div = document.createElement('div');
+    div.className = 'panel' + (cat.id === activeCat ? ' active' : '');
+    div.id = 'panel-' + cat.id;
+
+    const s = state[cat.id];
+
+    // From row
+    const fromRow = document.createElement('div');
+    fromRow.className = 'row-wrap';
+    fromRow.innerHTML = `
+      <div class="input-group">
+        <label>数值</label>
+        <input type="text" inputmode="decimal" id="val-${cat.id}" value="${s.val}">
+      </div>
+      <div class="input-group" style="flex:0 0 110px;">
+        <label>从</label>
+        <select id="from-${cat.id}"></select>
+      </div>
+    `;
+    div.appendChild(fromRow);
+
+    // Swap + result row
+    const midRow = document.createElement('div');
+    midRow.style.display = 'flex';
+    midRow.style.alignItems = 'flex-start';
+    midRow.style.gap = '10px';
+    midRow.style.marginTop = '12px';
+
+    const toGroup = document.createElement('div');
+    toGroup.style.flex = '1';
+    toGroup.style.minWidth = '0';
+
+    const toRow = document.createElement('div');
+    toRow.className = 'row-wrap result-row';
+    toRow.innerHTML = `
+      <div class="input-group">
+        <label>结果</label>
+        <input type="text" id="res-${cat.id}" readonly style="background:var(--border);color:var(--text);cursor:default;">
+      </div>
+      <div class="input-group" style="flex:0 0 110px;">
+        <label>到</label>
+        <select id="to-${cat.id}"></select>
+      </div>
+    `;
+    toGroup.appendChild(toRow);
+
+    const swapBtn = document.createElement('button');
+    swapBtn.className = 'swap-btn';
+    swapBtn.innerHTML = '&#x21C4;';
+    swapBtn.title = '交换单位';
+    swapBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      const s2 = state[cat.id];
+      const tmp = s2.from;
+      s2.from = s2.to;
+      s2.to = tmp;
+      document.getElementById('from-' + cat.id).value = s2.from;
+      document.getElementById('to-' + cat.id).value = s2.to;
+      convert(cat.id);
+    });
+
+    midRow.appendChild(toGroup);
+    midRow.appendChild(swapBtn);
+    div.appendChild(midRow);
+
+    // Result display
+    const display = document.createElement('div');
+    display.className = 'result-display';
+    display.id = 'display-' + cat.id;
+    div.appendChild(display);
+
+    // Populate selects
+    const fromSel = div.querySelector('#from-' + cat.id);
+    const toSel = div.querySelector('#to-' + cat.id);
+    cat.units.forEach(u => {
+      fromSel.add(new Option(u.label, u.value));
+      toSel.add(new Option(u.label, u.value));
+    });
+    fromSel.value = s.from;
+    toSel.value = s.to;
+
+    // Events
+    const valInput = div.querySelector('#val-' + cat.id);
+    valInput.addEventListener('input', function(){
+      state[cat.id].val = this.value;
+      convert(cat.id);
+    });
+    fromSel.addEventListener('change', function(){
+      state[cat.id].from = this.value;
+      convert(cat.id);
+    });
+    toSel.addEventListener('change', function(){
+      state[cat.id].to = this.value;
+      convert(cat.id);
+    });
+
+    // Restore result text if there's a value
+    setTimeout(() => convert(cat.id), 0);
+
+    return div;
+  }
+
+  function render() {
+    tabsEl.innerHTML = '';
+    panelsEl.innerHTML = '';
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'tab' + (cat.id === activeCat ? ' active' : '');
+      btn.textContent = cat.name;
+      btn.dataset.id = cat.id;
+      btn.addEventListener('click', function(){
+        activeCat = this.dataset.id;
+        render();
+      });
+      tabsEl.appendChild(btn);
+      panelsEl.appendChild(buildPanel(cat));
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>番茄计时器</title>
+<style>
+  :root {
+    --primary:#ff6b35;
+    --primary-light:#ff8f5e;
+    --bg:#faf8f5;
+    --bg-card:#ffffff;
+    --text:#1a1410;
+    --text-sub:#6b5e52;
+    --text-mute:#a89a8e;
+    --border:rgba(0,0,0,0.07);
+    --radius:18px;
+    --radius-sm:10px;
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:'Noto Sans SC','PingFang SC',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .container {
+    width:100%;
+    max-width:420px;
+    background:var(--bg-card);
+    border-radius:var(--radius);
+    padding:32px 24px;
+    box-shadow:0 2px 20px var(--border);
+  }
+  .top-link {
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:14px;
+    color:var(--text-sub);
+    text-decoration:none;
+    margin-bottom:24px;
+    transition:color .15s;
+  }
+  .top-link:hover { color:var(--primary); }
+
+  .presets {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:28px;
+  }
+  .preset-btn {
+    flex:1;
+    min-width:70px;
+    padding:10px 0;
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);
+    background:transparent;
+    color:var(--text-sub);
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    transition:all .15s;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .preset-btn:hover { border-color:var(--primary-light); color:var(--primary); }
+  .preset-btn.active {
+    border-color:var(--primary);
+    background:var(--primary);
+    color:#fff;
+  }
+
+  .timer-wrap {
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .timer {
+    font-size:64px;
+    font-variant-numeric:tabular-nums;
+    font-family:SF Mono,Menlo,Consolas,monospace;
+    letter-spacing:4px;
+    line-height:1.2;
+    color:var(--text);
+  }
+
+  .controls {
+    display:flex;
+    gap:12px;
+    justify-content:center;
+  }
+  .ctrl-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:12px 28px;
+    border:none;
+    border-radius:var(--radius-sm);
+    font-size:15px;
+    font-family:inherit;
+    cursor:pointer;
+    transition:all .15s;
+    background:var(--border);
+    color:var(--text);
+  }
+  .ctrl-btn:hover { opacity:.8; }
+  .ctrl-btn.primary {
+    background:var(--primary);
+    color:#fff;
+    min-width:120px;
+  }
+  .ctrl-btn.primary.active {
+    background:var(--text-sub);
+  }
+
+  .toast {
+    position:fixed;
+    top:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(-80px);
+    background:var(--primary);
+    color:#fff;
+    padding:14px 28px;
+    border-radius:var(--radius-sm);
+    font-size:16px;
+    font-family:inherit;
+    box-shadow:0 4px 20px rgba(255,107,53,.35);
+    opacity:0;
+    transition:all .35s ease;
+    pointer-events:none;
+    z-index:999;
+    white-space:nowrap;
+  }
+  .toast.show {
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+[data-theme="dark"] {
+  --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+  --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+
+  <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+
+  <div class="presets" id="presets">
+    <button class="preset-btn active" data-minutes="25">&#127805; 25分钟</button>
+    <button class="preset-btn" data-minutes="5">&#9749; 5分钟</button>
+    <button class="preset-btn" data-minutes="45">&#128218; 45分钟</button>
+    <button class="preset-btn" data-minutes="10">&#129704; 10分钟</button>
+  </div>
+
+  <div class="timer-wrap">
+    <div class="timer" id="timerDisplay">25:00</div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn primary" id="toggleBtn">&#9654; 开始</button>
+    <button class="ctrl-btn" id="resetBtn">&#8635; 重置</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const presets = document.querySelectorAll('.preset-btn');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const toggleBtn = document.getElementById('toggleBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const toast = document.getElementById('toast');
+
+  let totalSeconds = 25 * 60;
+  let remainingSeconds = totalSeconds;
+  let isRunning = false;
+  let intervalId = null;
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+
+  function updateDisplay() {
+    timerDisplay.textContent = formatTime(remainingSeconds);
+  }
+
+  function stopTimer() {
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    isRunning = false;
+    toggleBtn.innerHTML = '&#9654; 开始';
+    toggleBtn.classList.remove('active');
+  }
+
+  function startTimer() {
+    if (intervalId) return;
+    isRunning = true;
+    toggleBtn.innerHTML = '&#9208; 暂停';
+    toggleBtn.classList.add('active');
+    intervalId = setInterval(function(){
+      if (remainingSeconds <= 0) {
+        stopTimer();
+        showToast();
+        return;
+      }
+      remainingSeconds--;
+      updateDisplay();
+    }, 1000);
+  }
+
+  function toggleTimer() {
+    if (isRunning) {
+      stopTimer();
+    } else {
+      startTimer();
+    }
+  }
+
+  function resetTimer() {
+    stopTimer();
+    remainingSeconds = totalSeconds;
+    updateDisplay();
+  }
+
+  let toastTimeout = null;
+  function showToast() {
+    toast.textContent = '&#9200; 时间到!';
+    toast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(function(){ toast.classList.remove('show'); }, 4000);
+    requestNotify();
+  }
+
+  function requestNotify() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      new Notification('番茄计时器', { body:'&#9200; 时间到!', icon:'' });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(function(p){
+        if (p === 'granted') {
+          new Notification('番茄计时器', { body:'&#9200; 时间到!', icon:'' });
+        }
+      });
+    }
+  }
+
+  function setPreset(minutes) {
+    stopTimer();
+    totalSeconds = minutes * 60;
+    remainingSeconds = totalSeconds;
+    updateDisplay();
+    presets.forEach(function(btn){
+      btn.classList.toggle('active', parseInt(btn.dataset.minutes) === minutes);
+    });
+  }
+
+  presets.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      setPreset(parseInt(this.dataset.minutes));
+    });
+  });
+
+  toggleBtn.addEventListener('click', toggleTimer);
+  resetBtn.addEventListener('click', resetTimer);
+
+  updateDisplay();
+})();
+</script>
+</body>
+</html>

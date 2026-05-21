@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>AI提示词生成器</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --bg: #0d0d18;
+  --card-bg: #161625;
+  --card-border: rgba(255,255,255,0.04);
+  --text: #ededf5;
+  --text-sub: #b5b1c8;
+  --text-mute: #a09cb8;
+  --accent: #7b6ef0;
+  --tab-active-bg: #ffffff;
+  --tab-active-text: #1a1a2e;
+  --tab-inactive-bg: rgba(255,255,255,0.04);
+  --tab-inactive-text: #8a87a0;
+  --search-bg: rgba(255,255,255,0.05);
+  --search-border: rgba(255,255,255,0.08);
+  --radius: 16px;
+  --radius-sm: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container { max-width: 480px; margin: 0 auto; padding: 24px 16px 40px; }
+
+/* ── Header ── */
+.header { margin-bottom: 18px; }
+.header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+.header-back {
+  display: flex; align-items: center; gap: 4px; color: var(--text-sub);
+  text-decoration: none; font-size: 13px; opacity: 0.7;
+}
+.header-sub { font-size: 12px; color: var(--text-mute); }
+
+/* ── Quick Links ── */
+.quick-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.quick-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 16px;
+  font-size: 12px; font-weight: 500; font-family: inherit;
+  text-decoration: none; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-sub);
+  transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.quick-link:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.12); }
+.quick-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ql-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.ql-dot.doubao { background: #5ce5b5; }
+.ql-dot.deepseek { background: #4d6bfe; }
+.ql-dot.qianwen { background: #6b5ce7; }
+.ql-dot.kimi { background: #a78bfa; }
+.ql-dot.chatgpt { background: #34d399; }
+
+/* ── Search ── */
+.search-wrap { position: relative; margin-bottom: 16px; }
+.search-wrap input {
+  width: 100%; height: 40px; border-radius: 20px;
+  border: 1px solid var(--search-border);
+  background: var(--search-bg); color: var(--text);
+  font-size: 14px; font-family: inherit;
+  padding: 0 16px 0 40px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.search-wrap input::placeholder { color: var(--text-mute); }
+.search-wrap input:focus {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.07);
+}
+.search-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--text-mute); pointer-events: none;
+}
+
+/* ── Tabs ── */
+.tabs-wrap { position: relative; margin-bottom: 18px; }
+.tabs-wrap::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 40px;
+  background: linear-gradient(to right, transparent, var(--bg));
+  pointer-events: none; border-radius: 0 20px 20px 0;
+  opacity: 0; transition: opacity 0.2s;
+}
+.tabs-wrap.scrollable::after { opacity: 1; }
+.tabs {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; padding-right: 40px;
+  scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer; font-family: inherit; white-space: nowrap;
+  background: var(--tab-inactive-bg); color: var(--tab-inactive-text);
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab.active {
+  background: var(--tab-active-bg); color: var(--tab-active-text); font-weight: 600;
+}
+.tab:active { transform: scale(0.95); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Recent Section ── */
+.recent-section { margin-bottom: 16px; }
+.recent-label {
+  font-size: 12px; font-weight: 600; color: var(--text-mute);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.recent-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.04); }
+.recent-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.recent-row::-webkit-scrollbar { display: none; }
+.recent-chip {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px 6px 8px; border-radius: 20px; font-size: 12px; font-family: inherit;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.05);
+  color: var(--text-sub); cursor: pointer; transition: all 0.2s;
+  white-space: nowrap; -webkit-tap-highlight-color: transparent;
+}
+.recent-chip:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.recent-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.recent-chip .rc-emoji { font-size: 14px; }
+
+/* ── Grid ── */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid.single { grid-template-columns: 1fr; }
+
+/* ── Card ── */
+.card {
+  background: var(--card-bg); border-radius: var(--radius);
+  border: 1px solid var(--card-border); padding: 18px 16px 16px;
+  cursor: pointer; transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  display: flex; flex-direction: column; gap: 8px;
+  font-family: inherit; color: inherit; text-align: left;
+  width: 100%; -webkit-appearance: none; appearance: none;
+}
+.card:active { transform: scale(0.97); background: #1e1e30; }
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+
+.card-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.card-icon.c1 { background: rgba(124,111,247,0.15); color: #a99bff; }
+.card-icon.c2 { background: rgba(0,184,148,0.12); color: #34d399; }
+.card-icon.c3 { background: rgba(245,158,11,0.12);  color: #fbbf24; }
+.card-icon.c4 { background: rgba(239,68,68,0.10);  color: #f87171; }
+.card-icon.c5 { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.card-icon.c6 { background: rgba(236,72,153,0.10); color: #f472b6; }
+.card-icon.c7 { background: rgba(168,85,247,0.12); color: #c084fc; }
+.card-icon.c8 { background: rgba(20,184,166,0.10); color: #2dd4bf; }
+
+.card-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: #fff; }
+.card-desc {
+  font-size: 12px; color: var(--text-sub); line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-inputs {
+  font-size: 11px; color: var(--text-mute);
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.card-inputs svg { flex-shrink: 0; }
+
+/* ── Custom Card ── */
+.custom-card {
+  background: linear-gradient(135deg, rgba(124,111,247,0.10), rgba(124,111,247,0.02));
+  border: 1px dashed rgba(124,111,247,0.25); border-radius: var(--radius);
+  padding: 18px 16px; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 12px; grid-column: 1 / -1;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit; color: inherit; text-align: left;
+  width: 100%; -webkit-appearance: none; appearance: none;
+}
+.custom-card:active { transform: scale(0.97); }
+.custom-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.custom-icon {
+  width: 44px; height: 44px; background: rgba(124,111,247,0.18);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.custom-title { font-size: 14px; font-weight: 600; }
+.custom-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+/* ── Empty ── */
+.empty { text-align: center; padding: 40px 20px; color: var(--text-mute); grid-column: 1 / -1; }
+.empty-icon { font-size: 40px; margin-bottom: 8px; }
+.empty-text { font-size: 14px; margin-bottom: 4px; }
+.empty-hint { font-size: 12px; color: var(--text-mute); margin-bottom: 16px; }
+.empty-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.empty-btn {
+  padding: 8px 18px; border-radius: 20px; font-size: 13px; font-family: inherit;
+  border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+  background: rgba(255,255,255,0.05); color: var(--text-sub);
+  transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.empty-btn.accent {
+  background: rgba(124,111,247,0.15); border-color: rgba(124,111,247,0.25); color: #b5adff;
+}
+.empty-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.empty-btn.accent:hover { background: rgba(124,111,247,0.25); }
+.empty-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.25s, visibility 0s 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; visibility: visible; transition: opacity 0.25s, visibility 0s 0s; }
+
+.modal {
+  background: #1c1c2e; border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 480px; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  transform: translateY(40px); transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+  max-height: 80dvh; display: flex; flex-direction: column;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; margin: 0 auto 16px; }
+
+.modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.modal-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+}
+.modal-icon.c1 { background: rgba(124,111,247,0.15); color: #a99bff; }
+.modal-icon.c2 { background: rgba(0,184,148,0.12); color: #34d399; }
+.modal-icon.c3 { background: rgba(245,158,11,0.12);  color: #fbbf24; }
+.modal-icon.c4 { background: rgba(239,68,68,0.10);  color: #f87171; }
+.modal-icon.c5 { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.modal-icon.c6 { background: rgba(236,72,153,0.10); color: #f472b6; }
+.modal-icon.c7 { background: rgba(168,85,247,0.12); color: #c084fc; }
+.modal-icon.c8 { background: rgba(20,184,166,0.10); color: #2dd4bf; }
+.modal-title { font-size: 17px; font-weight: 700; flex: 1; }
+
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,0.06); color: var(--text-sub);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-close:hover { background: rgba(255,255,255,0.12); }
+.modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.modal-body { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+
+.modal-inputs {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+.modal-input-tag {
+  font-size: 11px; padding: 4px 10px; border-radius: 12px;
+  background: rgba(124,111,247,0.12); color: #b5adff;
+  border: 1px solid rgba(124,111,247,0.18);
+}
+
+.modal-prompt {
+  background: rgba(0,0,0,0.2); border-radius: var(--radius-sm); padding: 16px;
+  font-size: 14px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; color: #ccc;
+}
+
+.modal-footer { margin-top: 14px; }
+.btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: inherit; font-size: 14px; font-weight: 600; padding: 12px;
+  border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.97); }
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-copied { background: #34d399; color: #0d0d18; }
+
+.modal-quick-links { margin-top: 10px; display: none; }
+.modal-quick-links.show { display: flex; gap: 6px; flex-wrap: wrap; }
+.modal-ql {
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 6px; border-radius: 10px; font-size: 11px; font-weight: 500; font-family: inherit;
+  text-decoration: none; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04); color: var(--text-sub);
+  transition: all 0.2s; white-space: nowrap; cursor: pointer;
+}
+.modal-ql:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.15); }
+.modal-ql:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Toast ── */
+.toast-wrap {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 999;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none;
+}
+.toast {
+  background: rgba(28,28,46,0.95); color: #fff; font-size: 13px; font-weight: 500;
+  padding: 10px 20px; border-radius: 20px; animation: toastIn 0.25s ease;
+  display: flex; align-items: center; gap: 6px;
+}
+.toast.copied { color: #34d399; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Responsive ── */
+@media (min-width: 640px) {
+  .container { max-width: 600px; }
+  .grid { gap: 12px; }
+}
+
+@media (min-width: 768px) {
+  .container { max-width: 720px; padding: 32px 24px 48px; }
+  .grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .modal { border-radius: 24px; max-width: 560px; margin-bottom: 20vh; }
+  .modal-overlay { align-items: center; }
+}
+
+@media (min-width: 1024px) {
+  .container { max-width: 960px; }
+  .grid { gap: 16px; }
+  .card { padding: 22px 18px 18px; }
+}
+
+@media (min-width: 1440px) {
+  .container { max-width: 1200px; }
+  .grid { gap: 20px; }
+  .card { padding: 24px 20px 20px; }
+  .header-title { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-row">
+      <h1 class="header-title">AI 提示词生成器</h1>
+      <a href="index.html" class="header-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        工具箱
+      </a>
+    </div>
+    <div class="header-sub">精选高质量提示词模板，一键复制即用</div>
+    <div class="quick-links">
+      <a class="quick-link" href="https://www.doubao.com/chat/" target="_blank" rel="noopener" title="在豆包中打开">
+        <span class="ql-dot doubao"></span>豆包
+      </a>
+      <a class="quick-link" href="https://chat.deepseek.com/" target="_blank" rel="noopener" title="在DeepSeek中打开">
+        <span class="ql-dot deepseek"></span>DeepSeek
+      </a>
+      <a class="quick-link" href="https://tongyi.aliyun.com/qianwen/" target="_blank" rel="noopener" title="在通义千问中打开">
+        <span class="ql-dot qianwen"></span>千问
+      </a>
+      <a class="quick-link" href="https://kimi.moonshot.cn/" target="_blank" rel="noopener" title="在Kimi中打开">
+        <span class="ql-dot kimi"></span>Kimi
+      </a>
+      <a class="quick-link" href="https://chatgpt.com/" target="_blank" rel="noopener" title="在ChatGPT中打开">
+        <span class="ql-dot chatgpt"></span>ChatGPT
+      </a>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="搜索提示词…" aria-label="搜索提示词">
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-wrap" id="tabsWrap">
+    <div class="tabs" id="tabs" role="tablist" aria-label="提示词分类"></div>
+  </div>
+
+  <!-- Recent -->
+  <div class="recent-section" id="recentSection" style="display:none"></div>
+
+  <!-- Grid -->
+  <div class="grid" id="grid" role="list" aria-label="提示词模板列表"></div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-icon" id="modalIcon"></div>
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" id="modalClose" aria-label="关闭弹窗">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-inputs" id="modalInputs"></div>
+      <div class="modal-prompt" id="modalPrompt" tabindex="0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="modalCopyBtn">复制完整提示词</button>
+      <div class="modal-quick-links" id="modalQuickLinks">
+        <a class="modal-ql" href="https://www.doubao.com/chat/" target="_blank" rel="noopener"><span class="ql-dot doubao"></span>去豆包</a>
+        <a class="modal-ql" href="https://chat.deepseek.com/" target="_blank" rel="noopener"><span class="ql-dot deepseek"></span>去DeepSeek</a>
+        <a class="modal-ql" href="https://kimi.moonshot.cn/" target="_blank" rel="noopener"><span class="ql-dot kimi"></span>去Kimi</a>
+        <a class="modal-ql" href="https://chatgpt.com/" target="_blank" rel="noopener"><span class="ql-dot chatgpt"></span>去ChatGPT</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ============ DATA ============
+const PROMPTS = [
+  // ── 台词 / 脚本 ──
+  { cat:'script', emoji:'🎬', ic:'c1', title:'抖音短视频脚本', desc:'生成抖音风格的短视频拍摄脚本，包含黄金3秒开头、中间内容反转和结尾引导', inputs:['视频主题','目标时长','视频风格'], full:`你是一位抖音短视频策划专家。请根据我的需求撰写一个短视频脚本。
+
+脚本结构：
+1. 黄金3秒：开头吸引眼球的方式
+2. 中间内容：信息点或故事情节，需要反转或记忆点
+3. 结尾引导：关注/点赞/评论的引导语
+
+同时注明每个镜头的时长、运镜建议、BGM风格建议。
+
+视频主题：
+目标时长（秒）：
+视频风格（教程/vlog/剧情/口播）：` },
+  { cat:'script', emoji:'🎭', ic:'c2', title:'情景剧脚本', desc:'生成多人情景剧对话脚本，包含角色台词和场景指示', inputs:['剧情设定','角色列表','风格'], full:`你是一位短剧编剧。请根据以下设定，创作一段情景剧脚本。
+
+格式要求：
+- 使用标准的剧本格式：角色名：台词
+- 注明场景和舞台指示
+- 对话要自然，有冲突或反转
+- 适合1-3分钟内完成表演
+
+剧情设定：
+角色列表：
+风格（搞笑/情感/悬疑/反转）：` },
+  { cat:'script', emoji:'🎙️', ic:'c3', title:'播客口播稿', desc:'生成播客节目的开场白、过渡串词和结尾语', inputs:['节目名称','本期主题','节目调性'], full:`你是一位播客节目制作人。请帮我撰写播客口播稿，需要包含：
+1. 节目开场白（包含节目名称、本期主题）
+2. 嘉宾介绍（如有）
+3. 内容过渡串词
+4. 结语和下周预告
+
+节目名称：
+本期主题：
+节目调性（轻松/深度/访谈）：` },
+  { cat:'script', emoji:'📺', ic:'c4', title:'直播带货话术', desc:'生成直播带货的完整销售话术脚本，包含逼单和转款', inputs:['产品信息','目标人群','价格策略'], full:`你是一位资深直播带货运营。请为以下产品撰写完整的直播话术脚本。脚本需要包含：
+1. 开场引流的3句话
+2. 产品卖点讲解（对比、场景化描述）
+3. 价格锚点策略（原价→活动价→限时优惠）
+4. 逼单话术（制造紧迫感）
+5. 转款过渡语
+
+产品信息：
+目标人群：
+价格策略：` },
+
+  // ── 写作 ──
+  { cat:'writing', emoji:'✍️', ic:'c5', title:'表达方式转化', desc:'修改这段话为适合商务人士的表述方式，保持原意但调整用词和语气', inputs:['目标人群','原文内容'], full:`请将以下内容改写为适合【目标人群】的表述方式。
+
+改写要求：
+- 保留原意不变
+- 调整用词、语气和句式结构
+- 符合目标人群的阅读习惯和理解水平
+- 保持流畅自然，不要生硬
+
+目标人群：
+原文内容：` },
+  { cat:'writing', emoji:'💬', ic:'c6', title:'朋友圈文案', desc:'生成适合发微信朋友圈的文案，有情绪有态度不商业化', inputs:['主题/需求'], full:`你是一位资深社交媒体文案写手。请根据我的需求，生成一条适合发微信朋友圈的文案。
+
+要求：
+- 字数控制在100-200字
+- 语气自然，不要过于商业化
+- 有一定的情绪感染力
+- 适当使用emoji增强表现力
+- 不要使用过于网络化的用语
+
+我的需求/主题：` },
+  { cat:'writing', emoji:'📝', ic:'c7', title:'公众号仿写', desc:'模仿指定的公众号文章风格，写一篇新的文章', inputs:['参考文章','写作主题'], full:`请模仿以下公众号文章的写作风格，为我写一篇新文章。
+
+你需要分析并模仿的风格要素：
+1. 标题的句式结构
+2. 开头的引入方式
+3. 段落长度和节奏
+4. 用词习惯和金句风格
+5. 结尾的收束方式
+
+参考文章：
+[粘贴参考文章]
+
+我的写作主题：` },
+  { cat:'writing', emoji:'🎤', ic:'c8', title:'演讲牛人', desc:'生成有感染力的演讲稿，开场抓注意力，金句穿插，节奏有力', inputs:['演讲主题','听众群体','时长要求'], full:`你是一位资深演讲教练。请帮我撰写一篇演讲稿。
+
+你需要做到：
+- 开场30秒内抓住听众注意力
+- 采用总-分-总的经典结构
+- 穿插1-2个生动的案例或金句
+- 控制整体时长在X分钟以内
+- 语言要有画面感和节奏感
+
+演讲主题：
+听众群体：
+时长要求：` },
+  { cat:'writing', emoji:'😂', ic:'c4', title:'脱口秀大师', desc:'生成幽默脱口秀风格的吐槽文案，观察式喜剧手法', inputs:['主题'], full:`你是一位脱口秀编剧。请根据我提供的主题，创作一段幽默的脱口秀风格文案。
+
+要求：
+- 采用观察式喜剧手法，从日常小事入手
+- 节奏明快，包袱密集
+- 语言口语化，接地气
+- 适度自嘲，不要攻击他人
+- 字数在300-500字
+
+主题：` },
+  { cat:'writing', emoji:'💜', ic:'c7', title:'抽象朋友圈', desc:'生成抽象、意识流风格的朋友圈文案，文艺又朦胧', inputs:['主题/情绪'], full:`你是一位文艺写手，擅长写抽象、意识流风格的文字。
+
+请根据我的主题，写一段适合发朋友圈的抽象文案：
+- 字数在80-150字
+- 意识流风格，像在自言自语
+- 有点朦胧、有点诗意
+- 可以用碎片化的意象
+- 给人一种"没说什么但又好像说了很多"的感觉
+
+主题/情绪：` },
+
+  // ── 职场办公 ──
+  { cat:'work', emoji:'💼', ic:'c1', title:'周报生成', desc:'把零散的工作内容整理成规范的周报，突出亮点和成果', inputs:['本周工作内容'], full:`请根据我提供的本周工作碎片信息，整理成一份专业规范的周报。
+
+周报结构：
+1. 本周工作完成情况（分条列出，量化结果）
+2. 遇到的问题及解决方案
+3. 下周工作计划
+4. 需要协助的事项
+
+要求：语言简洁专业，突出亮点和成果，问题描述客观附解决思路。
+
+本周工作内容：` },
+  { cat:'work', emoji:'📊', ic:'c2', title:'PPT大纲生成', desc:'根据主题快速生成PPT内容大纲，包含目录和每页要点', inputs:['PPT主题','目标听众','演示时长'], full:`你是一位资深PPT策划。请根据我的需求生成一份PPT大纲。
+
+大纲需要：
+- 封面页标题建议
+- 目录结构（3-6个大板块）
+- 每个板块的核心要点（3-5个bullet point）
+- 关键数据或案例的建议位置
+- 结尾页的总结框架
+
+PPT主题：
+目标听众：
+演示时长（分钟）：` },
+  { cat:'work', emoji:'📧', ic:'c5', title:'商务邮件', desc:'生成专业得体的商务邮件，标题简洁，正文清晰，结尾有行动号召', inputs:['收件人及关系','邮件目的','关键信息'], full:`你是一位商务沟通专家。请帮我撰写一封专业的商务邮件。
+
+要求：
+- 标题简洁明确
+- 开头礼貌得体，不过度寒暄
+- 正文清晰表达意图，分段合理
+- 结尾有明确的行动号召
+- 语气专业但不生硬
+
+收件人及关系（客户/领导/同事）：
+邮件目的：
+关键信息：` },
+  { cat:'work', emoji:'🎯', ic:'c4', title:'OKR目标拆解', desc:'把模糊的目标拆解成可执行的OKR，每个KR有明确的衡量标准', inputs:['目标','团队/个人','时间周期'], full:`你是一位OKR教练。请帮我把以下目标拆解成OKR格式。
+
+拆解要求：
+- O（目标）：定性描述，有方向感
+- KR（关键结果）：定量可衡量，3-5个
+- 每个KR需要有明确的衡量标准
+- 考虑SMART原则
+- 给出实现每个KR的关键动作建议
+
+我的目标：
+团队/个人：
+时间周期：` },
+  { cat:'work', emoji:'📋', ic:'c8', title:'会议纪要', desc:'把会议录音要点整理成标准纪要，包含决议和待办事项', inputs:['会议要点内容'], full:`请根据我提供的会议要点，整理成一份规范的会议纪要。
+
+纪要结构：
+1. 会议基本信息（主题、时间、参会人）
+2. 核心议题及讨论要点
+3. 达成的决议
+4. 待办事项（事项、负责人、截止时间）
+5. 下次会议预告
+
+会议要点内容：` },
+  { cat:'work', emoji:'🗣️', ic:'c3', title:'面试问题生成', desc:'根据岗位要求生成结构化面试问题和评估维度', inputs:['岗位名称','岗位级别','关键技能要求'], full:`你是一位资深HR。请根据以下岗位需求生成一套结构化面试问题和评估维度。
+
+输出内容：
+1. 核心能力维度（3-5个）
+2. 每个维度对应的面试问题（2-3题）
+3. 每个问题的评估要点
+4. 建议的追问方向
+
+岗位名称：
+岗位级别：
+关键技能要求：` },
+
+  // ── 小红书 ──
+  { cat:'xhs', emoji:'📕', ic:'c6', title:'小红书爆款标题', desc:'生成10个吸引人的小红书标题，利用好奇心和数字技巧', inputs:['内容主题','目标读者'], full:`你是一位小红书内容运营专家。请根据我的内容主题生成10个吸引人的小红书标题。
+
+标题要求：
+- 利用好奇心、数字、反差等技巧
+- 融入emoji增强表现力
+- 每个标题控制在20字以内
+- 避免夸张和违规词（如最、第一、100%等）
+- 风格真实，像真人分享而非广告
+
+内容主题：
+目标读者：` },
+  { cat:'xhs', emoji:'🏷️', ic:'c1', title:'小红书正文', desc:'生成小红书风格的完整笔记正文，真实分享语气，自然种草', inputs:['笔记主题','笔记类型'], full:`你是一位小红书博主。请根据以下主题撰写一篇小红书笔记。
+
+笔记要求：
+- 开头用一句话抓住注意力
+- 采用"我最近发现/用到/学了..."的分享语气
+- 分段清晰，使用emoji做视觉分隔
+- 自然植入个人体验和真实感受
+- 结尾引导互动（提问或邀请分享）
+- 加上合适的3-5个话题标签
+
+笔记主题：
+笔记类型（好物分享/攻略教程/心得体会）：` },
+  { cat:'xhs', emoji:'#️⃣', ic:'c7', title:'话题标签推荐', desc:'根据内容推荐最合适的小红书话题标签，包含大流量和精准标签', inputs:['内容主题','内容类型'], full:`你是一位小红书运营专家。请为以下内容推荐最合适的话题标签。
+
+要求：
+- 推荐15-20个标签
+- 包含2-3个大流量标签
+- 包含5-8个精准标签
+- 包含3-5个长尾标签
+- 标注每个标签的推荐理由
+
+内容主题：
+内容类型（图文/视频）：` },
+  { cat:'xhs', emoji:'📸', ic:'c8', title:'封面文案生成', desc:'为小红书笔记封面设计吸引人的文字，主标题+副标题', inputs:['笔记主题','目标读者痛点'], full:`你是一位视觉营销专家。请为以下小红书笔记设计封面文案。
+
+要求：
+- 主标题5-8个字，醒目直击痛点
+- 副标题10-15个字，补充关键信息
+- 标签文字3-5个字，放在封面角落
+
+笔记主题：
+目标读者痛点：` },
+
+  // ── 学习 ──
+  { cat:'study', emoji:'📖', ic:'c2', title:'知识通俗解释', desc:'用通俗易懂的方式解释复杂概念，用类比和故事', inputs:['需要解释的概念','目标读者背景'], full:`请用通俗易懂的方式解释以下概念，让完全没有基础的人也能理解。
+
+要求：
+- 使用生活中的类比或比喻
+- 从简单到深入，层层递进
+- 避免使用专业术语，必须使用时先解释
+- 可以举1-2个具体例子
+- 用一句话总结核心要点
+
+需要解释的概念：
+目标读者背景：` },
+  { cat:'study', emoji:'🧠', ic:'c3', title:'记忆口诀生成', desc:'把难记的知识点编成顺口溜，押韵上口，节奏感强', inputs:['知识点','口诀风格'], full:`请将以下知识点编成容易记忆的口诀或顺口溜。
+
+要求：
+- 押韵上口，节奏感强
+- 每句不要太长
+- 尽量覆盖所有关键信息点
+- 可以适当使用谐音或联想
+- 风格可以轻松幽默
+
+知识点：
+口诀风格（严肃/幽默/魔性）：` },
+  { cat:'study', emoji:'📚', ic:'c4', title:'读书笔记框架', desc:'根据书名/内容生成结构化读书笔记提纲，关键概念和金句', inputs:['书名','作者'], full:`你是一位高效阅读教练。请为以下书籍生成一份读书笔记框架。
+
+框架包含：
+1. 核心观点提炼（1-2句话讲清楚这本书在说什么）
+2. 章节逻辑导图
+3. 关键概念清单（3-5个）
+4. 值得摘抄的金句位置提示
+5. 实践行动建议
+
+书名：
+作者：` },
+  { cat:'study', emoji:'🏆', ic:'c5', title:'学习计划制定', desc:'根据目标和时间制定个性化学习计划，按周拆解任务', inputs:['学习目标','现有基础','每周可用时间'], full:`你是一位学习规划师。请根据我的情况制定一份可执行的学习计划。
+
+计划需要：
+- 根据目标倒推需要掌握的技能树
+- 按周拆解学习任务
+- 推荐适合的学习资源类型
+- 设置阶段性的检验节点
+- 考虑保持学习动力的策略
+
+学习目标：
+现有基础：
+每周可用时间：` },
+
+  // ── 健康管理 ──
+  { cat:'health', emoji:'🥗', ic:'c8', title:'饮食计划制定', desc:'根据身体状况和目标制定个性化饮食方案，包含食谱建议', inputs:['身体情况','健康目标','饮食禁忌'], full:`你是一位注册营养师。请根据我的情况制定一份个性化的饮食计划。
+
+计划需包含：
+- 每日热量和营养素摄入目标
+- 早中晚三餐的食物搭配建议
+- 适合的食材清单和替代方案
+- 需要控制或避免的食物
+- 一周的参考菜单
+
+我的情况（身高/体重/年龄/性别）：
+健康目标（减重/增肌/维持）：
+饮食禁忌：` },
+  { cat:'health', emoji:'🏃', ic:'c1', title:'运动计划制定', desc:'根据身体状况和目标制定科学运动方案，包含训练动作和进阶节奏', inputs:['身体情况','运动目标','可用器材/场地'], full:`你是一位专业健身教练。请根据我的情况制定一份运动计划。
+
+计划需包含：
+- 每周运动频率和时间安排
+- 具体的训练动作和组数
+- 有氧和无氧的比例分配
+- 进阶节奏和强度控制
+- 热身和拉伸建议
+- 常见错误和注意事项
+
+我的情况：
+运动目标：
+可用器材/场地：` },
+  { cat:'health', emoji:'😴', ic:'c2', title:'睡眠改善方案', desc:'根据睡眠问题制定个性化改善方案，包含睡前流程和环境优化', inputs:['睡眠问题','日常作息时间'], full:`你是一位睡眠健康顾问。请根据我的情况制定一份睡眠改善方案。
+
+方案需包含：
+- 睡眠问题的可能原因分析
+- 睡前1小时的放松流程
+- 卧室环境优化建议
+- 饮食和运动对睡眠的影响
+- 1周的作息调整计划
+- 何时应该寻求专业帮助
+
+我的睡眠问题（入睡困难/易醒/早醒/浅眠）：
+日常作息时间：` },
+
+  // ── 旅行规划 ──
+  { cat:'travel', emoji:'✈️', ic:'c5', title:'旅行攻略生成', desc:'根据目的地和天数生成详细旅行攻略，包含行程美食避坑指南', inputs:['目的地','出行天数','人均预算','出行季节'], full:`你是一位资深旅行规划师。请为我制定一份详细的旅行攻略。
+
+攻略需包含：
+- 最佳出行时间及天气提示
+- 每日行程安排（景点、美食、交通）
+- 住宿区域推荐及预算建议
+- 必吃美食清单（含大致价格）
+- 避坑指南（常见的坑和注意事项）
+- 预算预估（交通/住宿/餐饮/门票）
+- 拍照打卡点推荐
+
+目的地：
+出行天数：
+人均预算：
+出行季节：` },
+  { cat:'travel', emoji:'🎒', ic:'c6', title:'行李清单生成', desc:'根据目的地和行程自动生成行李打包清单，分类标注重要程度', inputs:['目的地','出行天数','当地天气','出行目的'], full:`你是一位旅行达人。请根据我的出行计划生成一份行李打包清单。
+
+按重要程度分类（必须带/建议带/可选）：
+1. 证件类（身份证/护照/签证等）
+2. 衣物类（根据天气和场合）
+3. 电子设备及充电器
+4. 洗漱用品和护肤品
+5. 常备药品和急救用品
+6. 其他（当地货币/转换插头/雨具等）
+
+目的地：
+出行天数：
+当地天气：
+出行目的（商务/度假/户外）：` },
+  { cat:'travel', emoji:'📸', ic:'c2', title:'朋友圈游记', desc:'把旅行经历变成优美的游记文案，有画面感，配图友好', inputs:['旅行地点','印象最深的事','旅途感受'], full:`你是一位旅行作家。请根据我的旅行经历生成一段适合发朋友圈的游记。
+
+要求：
+- 200-300字，配图友好
+- 有画面感，让读者身临其境
+- 包含1-2个有趣的小细节
+- 自然融入个人感受
+- 结尾留有余味
+
+旅行地点：
+印象最深的事：
+旅途中的感受：` },
+];
+
+const CATEGORIES = [
+  { id:'all', name:'全部' },
+  { id:'script', name:'台词/脚本' },
+  { id:'writing', name:'写作' },
+  { id:'work', name:'职场办公' },
+  { id:'xhs', name:'小红书' },
+  { id:'study', name:'学习' },
+  { id:'health', name:'健康管理' },
+  { id:'travel', name:'旅行规划' },
+];
+
+// AI platform quick links
+const PLATFORMS = [
+  { id:'doubao', name:'豆包', url:'https://www.doubao.com/chat/', cls:'doubao' },
+  { id:'deepseek', name:'DeepSeek', url:'https://chat.deepseek.com/', cls:'deepseek' },
+  { id:'kimi', name:'Kimi', url:'https://kimi.moonshot.cn/', cls:'kimi' },
+  { id:'chatgpt', name:'ChatGPT', url:'https://chatgpt.com/', cls:'chatgpt' },
+];
+
+// ============ STATE ============
+let activeCat = 'all';
+let searchQuery = '';
+let savedFocusEl = null;
+
+// ============ RECENT ============
+const RECENT_KEY = 'promptlib_recent';
+const MAX_RECENT = 6;
+
+function getRecent() {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const ids = JSON.parse(raw);
+    return ids.filter(id => PROMPTS[id]).slice(0, MAX_RECENT);
+  } catch { return []; }
+}
+
+function addRecent(index) {
+  try {
+    const ids = getRecent().filter(id => id !== index);
+    ids.unshift(index);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(ids.slice(0, MAX_RECENT)));
+  } catch {}
+}
+
+function renderRecent() {
+  const section = document.getElementById('recentSection');
+  const recents = getRecent();
+  if (recents.length === 0 || activeCat !== 'all' || searchQuery) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  section.innerHTML = `
+    <div class="recent-label">最近使用</div>
+    <div class="recent-row">
+      ${recents.map(id => {
+        const p = PROMPTS[id];
+        return `<button class="recent-chip" data-index="${id}" aria-label="最近使用：${p.title}">
+          <span class="rc-emoji">${p.emoji}</span>${p.title}
+        </button>`;
+      }).join('')}
+    </div>
+  `;
+  section.querySelectorAll('.recent-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const p = PROMPTS[parseInt(chip.dataset.index)];
+      openModal(p);
+    });
+  });
+}
+
+// ============ RENDER ============
+function renderTabs() {
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = CATEGORIES.map(c =>
+    `<button class="tab${c.id === activeCat ? ' active' : ''}" data-cat="${c.id}" role="tab" aria-selected="${c.id === activeCat}">${c.name}</button>`
+  ).join('');
+
+  const wrap = document.getElementById('tabsWrap');
+  requestAnimationFrame(() => {
+    wrap.classList.toggle('scrollable', tabsEl.scrollWidth > tabsEl.clientWidth);
+  });
+}
+
+function getFiltered() {
+  let list = activeCat === 'all' ? [...PROMPTS] : PROMPTS.filter(p => p.cat === activeCat);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      p.desc.toLowerCase().includes(q) ||
+      p.cat.toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+
+// Global search: returns matches across ALL categories
+function getGlobalMatches() {
+  if (!searchQuery) return [];
+  const q = searchQuery.toLowerCase();
+  return PROMPTS.filter(p =>
+    p.title.toLowerCase().includes(q) ||
+    p.desc.toLowerCase().includes(q) ||
+    p.cat.toLowerCase().includes(q)
+  );
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const filtered = getFiltered();
+
+  if (filtered.length === 0) {
+    const globalMatches = (activeCat !== 'all' && searchQuery) ? getGlobalMatches() : [];
+    const catName = activeCat === 'all' ? '全部' : CATEGORIES.find(c => c.id === activeCat)?.name || '';
+    const searchInfo = searchQuery ? `"${searchQuery}"` : '';
+    const scopeInfo = activeCat !== 'all' ? `分类"${catName}"` : '全部模板';
+
+    let actions = '';
+
+    if (globalMatches.length > 0) {
+      // In a category with search, no results here but found globally
+      grid.innerHTML = `<div class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">${scopeInfo}中没有匹配${searchInfo}的模板</div>
+        <div class="empty-hint">但在全部模板中找到了 ${globalMatches.length} 个结果</div>
+        <div class="empty-actions">
+          <button class="empty-btn accent" data-action="search-all">在全部模板中搜索${searchInfo}</button>
+          <button class="empty-btn" data-action="clear-search">清空搜索</button>
+        </div>
+        <div class="empty-actions" style="margin-top:12px">
+          <button class="empty-btn" data-action="custom-generate">✨ 自定义生成提示词</button>
+        </div>
+      </div>`;
+    } else if (searchQuery && activeCat !== 'all') {
+      actions = `<button class="empty-btn accent" data-action="search-all">在全部模板中搜索${searchInfo}</button>
+                 <button class="empty-btn" data-action="clear-search">清空搜索</button>`;
+    } else if (searchQuery) {
+      actions = `<button class="empty-btn" data-action="clear-search">清空搜索</button>`;
+    } else if (activeCat !== 'all') {
+      actions = `<button class="empty-btn" data-action="view-all">查看全部模板</button>`;
+    }
+
+    if (!globalMatches.length) {
+      grid.innerHTML = `<div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">${scopeInfo}中没有匹配${searchInfo}的模板</div>
+        <div class="empty-hint">试试调整筛选条件或搜索其他关键词</div>
+        ${actions ? `<div class="empty-actions">${actions}</div>` : ''}
+        <div class="empty-actions" style="margin-top:12px">
+          <button class="empty-btn" data-action="custom-generate">✨ 自定义生成提示词</button>
+        </div>
+      </div>`;
+    }
+
+    bindEmptyActions(grid);
+    return;
+  }
+
+  const cards = filtered.map((p, i) => {
+    const idx = PROMPTS.indexOf(p);
+    const inputsHint = p.inputs && p.inputs.length ? `<span class="card-inputs">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>${p.inputs.join('、')}
+    </span>` : '';
+    return `<button class="card" data-index="${idx}" style="animation: fadeUp 0.3s ease both; animation-delay:${i * 0.03}s" aria-label="${p.title} — 需要填写：${(p.inputs||[]).join('、')}">
+      <span class="card-icon ${p.ic}">${p.emoji}</span>
+      <span class="card-title">${p.title}</span>
+      <span class="card-desc">${p.desc}</span>
+      ${inputsHint}
+    </button>`;
+  }).join('');
+
+  const customCard = activeCat === 'all' ? '' : `
+    <button class="custom-card" id="customCard" aria-label="生成自定义指令">
+      <span class="custom-icon">✨</span>
+      <span>
+        <span class="custom-title">生成自定义指令</span>
+        <span class="custom-sub">输入你的需求，AI自动生成专属提示词</span>
+      </span>
+    </button>
+  `;
+
+  grid.innerHTML = cards + customCard;
+
+  grid.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      const p = PROMPTS[parseInt(card.dataset.index)];
+      openModal(p);
+    });
+  });
+
+  const cc = grid.querySelector('#customCard');
+  if (cc) {
+    cc.addEventListener('click', () => showToast('自定义指令功能开发中，敬请期待'));
+  }
+}
+
+function bindEmptyActions(grid) {
+  grid.querySelectorAll('.empty-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.action === 'clear-search') {
+        searchQuery = '';
+        document.getElementById('searchInput').value = '';
+        renderRecent();
+        renderGrid();
+      } else if (btn.dataset.action === 'view-all') {
+        activeCat = 'all';
+        renderTabs();
+        renderRecent();
+        renderGrid();
+      } else if (btn.dataset.action === 'search-all') {
+        activeCat = 'all';
+        renderTabs();
+        renderRecent();
+        renderGrid();
+      } else if (btn.dataset.action === 'custom-generate') {
+        showToast('自定义指令功能开发中，敬请期待');
+      }
+    });
+  });
+}
+
+// ============ MODAL ============
+let currentPrompt = null;
+
+function openModal(p) {
+  currentPrompt = p;
+  savedFocusEl = document.activeElement;
+
+  // Track recent usage
+  const idx = PROMPTS.indexOf(p);
+  addRecent(idx);
+
+  document.getElementById('modalIcon').className = 'modal-icon ' + p.ic;
+  document.getElementById('modalIcon').textContent = p.emoji;
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('modalPrompt').textContent = p.full;
+
+  // Render input tags
+  const inputsEl = document.getElementById('modalInputs');
+  if (p.inputs && p.inputs.length) {
+    inputsEl.innerHTML = `<span style="font-size:11px;color:var(--text-mute);margin-right:2px">需要填写：</span>` +
+      p.inputs.map(inp => `<span class="modal-input-tag">${inp}</span>`).join('');
+    inputsEl.style.display = 'flex';
+  } else {
+    inputsEl.style.display = 'none';
+  }
+
+  resetCopyBtn();
+
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  // Focus the close button
+  requestAnimationFrame(() => {
+    document.getElementById('modalClose').focus();
+  });
+
+  document.addEventListener('keydown', modalKeyHandler);
+}
+
+function closeModal() {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  currentPrompt = null;
+  document.removeEventListener('keydown', modalKeyHandler);
+
+  if (savedFocusEl && typeof savedFocusEl.focus === 'function') {
+    savedFocusEl.focus();
+    savedFocusEl = null;
+  }
+
+  // Refresh recent section
+  renderRecent();
+}
+
+function modalKeyHandler(e) {
+  if (e.key === 'Escape') { closeModal(); return; }
+  if (e.key === 'Tab') trapFocus(e);
+}
+
+function trapFocus(e) {
+  const modal = document.querySelector('.modal');
+  const focusable = modal.querySelectorAll('button:not([disabled]), [tabindex]:not([tabindex="-1"]), input, textarea, a[href]');
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else {
+    if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+
+document.getElementById('modalCopyBtn').addEventListener('click', () => {
+  if (!currentPrompt) return;
+  copyText(currentPrompt.full);
+  const btn = document.getElementById('modalCopyBtn');
+  btn.textContent = '已复制 ✓';
+  btn.classList.add('btn-copied');
+  document.getElementById('modalQuickLinks').classList.add('show');
+  setTimeout(resetCopyBtn, 3000);
+});
+
+function resetCopyBtn() {
+  const btn = document.getElementById('modalCopyBtn');
+  btn.textContent = '复制完整提示词';
+  btn.classList.remove('btn-copied');
+  document.getElementById('modalQuickLinks').classList.remove('show');
+}
+
+// ============ COPY ============
+function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', true))
+        .catch(() => fallbackCopy(text));
+      return;
+    }
+  } catch(e) {}
+  fallbackCopy(text);
+}
+
+function fallbackCopy(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) showToast('已复制到剪贴板', true);
+    else showToast('复制失败，请手动选择文字');
+  } catch(e) {
+    showToast('复制失败，请手动选择文字');
+  }
+}
+
+// ============ TOAST ============
+function showToast(msg, success) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (success ? ' copied' : '');
+  if (success) {
+    el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>${msg}`;
+  } else {
+    el.textContent = msg;
+  }
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0'; el.style.transition = 'opacity 0.2s';
+    setTimeout(() => el.remove(), 200);
+  }, 2000);
+}
+
+// ============ EVENTS ============
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  activeCat = tab.dataset.cat;
+  renderTabs();
+  renderRecent();
+  renderGrid();
+  tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+});
+
+document.getElementById('tabs').addEventListener('keydown', (e) => {
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const idx = tabs.indexOf(document.activeElement);
+  if (e.key === 'ArrowRight' && idx < tabs.length - 1) {
+    e.preventDefault(); tabs[idx + 1].focus(); tabs[idx + 1].click();
+  }
+  if (e.key === 'ArrowLeft' && idx > 0) {
+    e.preventDefault(); tabs[idx - 1].focus(); tabs[idx - 1].click();
+  }
+});
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim();
+  renderRecent();
+  renderGrid();
+});
+
+window.addEventListener('resize', () => {
+  const tabsEl = document.getElementById('tabs');
+  const wrap = document.getElementById('tabsWrap');
+  if (tabsEl && wrap) {
+    wrap.classList.toggle('scrollable', tabsEl.scrollWidth > tabsEl.clientWidth);
+  }
+});
+
+// ============ INIT ============
+renderTabs();
+renderRecent();
+renderGrid();
+
+requestAnimationFrame(() => {
+  const tabsEl = document.getElementById('tabs');
+  const wrap = document.getElementById('tabsWrap');
+  wrap.classList.toggle('scrollable', tabsEl.scrollWidth > tabsEl.clientWidth);
+});
+</script>
+</body>
+</html>

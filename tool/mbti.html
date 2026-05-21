@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MBTI 性格测试</title>
+<style>
+  :root {
+    --primary:#ff6b35;
+    --primary-light:#ff8f5e;
+    --bg:#faf8f5;
+    --bg-card:#ffffff;
+    --text:#1a1410;
+    --text-sub:#6b5e52;
+    --text-mute:#a89a8e;
+    --border:rgba(0,0,0,0.07);
+    --radius:18px;
+    --radius-sm:10px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+    padding: 16px 16px 40px;
+  }
+
+  /* Top Bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 16px;
+  }
+
+  .top-bar a {
+    color: var(--text-sub);
+    text-decoration: none;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color .2s;
+  }
+
+  .top-bar a:hover { color: var(--primary); }
+
+  .top-bar a::before { content:"\2190"; font-size:16px; }
+
+  .top-bar .title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Card */
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  /* Start Page */
+  .start-page { text-align: center; }
+
+  .start-page .quiz-icon {
+    font-size: 64px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .start-page h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .start-page .sub {
+    color: var(--text-sub);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .start-page .desc {
+    color: var(--text-mute);
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+    text-align: left;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+  }
+
+  .start-page .desc span {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-sub);
+    font-weight: 600;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar .fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 3px;
+    transition: width .4s ease;
+  }
+
+  .progress-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+
+  /* Question */
+  .question h2 {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option {
+    display: block;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .option .opt-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--text);
+    transition: all .2s;
+    background: var(--bg-card);
+    user-select: none;
+  }
+
+  .option .opt-label .dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+  }
+
+  .option input:checked + .opt-label {
+    border-color: var(--primary);
+    background: rgba(255,107,53,0.06);
+  }
+
+  .option input:checked + .opt-label .dot {
+    border-color: var(--primary);
+    background: var(--primary);
+  }
+
+  .option input:checked + .opt-label .dot::after {
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:#fff;
+  }
+
+  /* Navigation Buttons */
+  .nav-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .nav-btns button {
+    flex: 1;
+    padding: 13px 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    font-family: inherit;
+  }
+
+  .btn-prev {
+    background: var(--bg);
+    color: var(--text-sub);
+  }
+
+  .btn-prev:hover { background: var(--border); }
+
+  .btn-next {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .btn-next:hover { background: var(--primary-light); }
+  .btn-next:disabled { opacity:0.4; cursor:not-allowed; }
+
+  /* Result Page */
+  .result-page { text-align: center; }
+
+  .result-page .result-emoji {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .result-page .result-type {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  .result-page .result-title {
+    font-size: 15px;
+    color: var(--text-sub);
+    margin-bottom: 18px;
+  }
+
+  .result-section {
+    text-align: left;
+    margin-bottom: 14px;
+  }
+
+  .result-section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .result-section p,
+  .result-section li {
+    font-size: 13px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+
+  .result-section ul {
+    padding-left: 18px;
+  }
+
+  .result-section ul li {
+    margin-bottom: 2px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+
+  .result-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .btn-share {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 13px 0;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s;
+  }
+
+  .btn-share:hover { background: var(--primary-light); }
+
+  .btn-share.copied {
+    background: #4caf50;
+  }
+
+  .btn-retry {
+    background: var(--bg);
+    color: var(--text-sub);
+    border: none;
+    padding: 13px 0;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s;
+  }
+
+  .btn-retry:hover { background: var(--border); }
+
+  .hidden { display: none !important; }
+
+  .toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; }
+  [data-theme="dark"] {
+    --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+    --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+  }
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+
+<div class="container" id="app">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+    <span class="title">性格测试</span>
+    <span style="width:56px"></span>
+  </div>
+
+  <!-- Start Page -->
+  <div class="card start-page" id="pageStart">
+    <span class="quiz-icon">🧠</span>
+    <h1>MBTI 性格测试</h1>
+    <p class="sub">5 道题，发现你的隐藏人格</p>
+    <div class="desc">
+      每题选择一个最符合你的选项，没有对错之分。<br>
+      测试结果仅供参考，图个乐子~
+      <span>大概需要 2 分钟</span>
+    </div>
+    <button class="btn-next" style="width:100%" onclick="startQuiz()">开始测试</button>
+  </div>
+
+  <!-- Quiz Page -->
+  <div class="card hidden" id="pageQuiz">
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="fill" id="progressFill" style="width:20%"></div>
+      </div>
+      <span class="progress-label" id="progressLabel">1/5</span>
+    </div>
+    <div class="question" id="questionWrap">
+      <h2 id="questionText"></h2>
+      <div class="options" id="optionsWrap"></div>
+      <div class="nav-btns">
+        <button class="btn-prev" id="btnPrev" onclick="prevQuestion()">上一题</button>
+        <button class="btn-next" id="btnNext" onclick="nextQuestion()">下一题</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Page -->
+  <div class="card hidden" id="pageResult">
+    <div class="result-page">
+      <span class="result-emoji" id="resultEmoji"></span>
+      <div class="result-type" id="resultType"></div>
+      <div class="result-title" id="resultTitle"></div>
+
+      <div class="divider"></div>
+
+      <div class="result-section">
+        <h3>📝 性格描述</h3>
+        <p id="resultDesc"></p>
+      </div>
+
+      <div class="result-section">
+        <h3>💼 适合职业</h3>
+        <ul id="resultCareer"></ul>
+      </div>
+
+      <div class="result-section">
+        <h3>❤️ 恋爱风格</h3>
+        <p id="resultLove"></p>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="result-section">
+        <h3>🔍 深度分析</h3>
+        <p id="resultAnalysis"></p>
+      </div>
+
+      <div class="result-btns">
+        <button class="btn-share" id="btnShare" onclick="shareResult()">📤 分享测试结果</button>
+        <button class="btn-retry" onclick="resetQuiz()">🔄 重新测试</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: '周末朋友约你出去玩，你更喜欢？',
+    opts: [
+      { text: '热闹的聚会 / 唱K', type: 'adventurer' },
+      { text: '小众的咖啡馆 / 书店', type: 'artist' },
+      { text: '户外爬山 / 骑行', type: 'adventurer' },
+      { text: '宅家看电影 / 打游戏', type: 'thinker' },
+    ],
+  },
+  {
+    q: '面对一个困难的工作任务，你会？',
+    opts: [
+      { text: '立刻制定计划开始做', type: 'guardian' },
+      { text: '先搜集资料再行动', type: 'thinker' },
+      { text: '找有经验的人请教', type: 'artist' },
+      { text: '先放一放，deadline再说', type: 'adventurer' },
+    ],
+  },
+  {
+    q: '你更看重恋人的哪个特质？',
+    opts: [
+      { text: '外貌 / 气质', type: 'artist' },
+      { text: '才华 / 能力', type: 'thinker' },
+      { text: '性格 / 忠诚', type: 'guardian' },
+      { text: '经济实力 / 上进心', type: 'adventurer' },
+    ],
+  },
+  {
+    q: '如果中了 500 万，第一件事做什么？',
+    opts: [
+      { text: '买房买车', type: 'guardian' },
+      { text: '辞职环游世界', type: 'adventurer' },
+      { text: '投资理财', type: 'thinker' },
+      { text: '存银行继续上班', type: 'guardian' },
+    ],
+  },
+  {
+    q: '用一个词形容你自己？',
+    opts: [
+      { text: '社牛 / 外向', type: 'adventurer' },
+      { text: '社恐 / 内向', type: 'artist' },
+      { text: '理性 / 冷静', type: 'thinker' },
+      { text: '感性 / 冲动', type: 'artist' },
+    ],
+  },
+];
+
+const RESULTS = {
+  adventurer: {
+    emoji: '🦁',
+    title: '冒险家',
+    subtitle: '自由奔放，勇往直前',
+    desc: '你是一个充满活力、热爱冒险的人。你喜欢新鲜事物，讨厌一成不变的生活。在人群中你总是那个带头搞事的人，有你在的地方永远不会无聊。你的行动力超强，想到了就会立刻去做，这种魄力让人佩服。不过偶尔也会因为冲动而翻车，但这正是你的可爱之处——永远年轻，永远热泪盈眶。',
+    career: ['创业者 / 自由职业者', '旅行博主 / 摄影师', '销售 / 市场策划', '极限运动教练', '活动策划师'],
+    love: '你需要一个能陪你疯、陪你闹的另一半。Ta不需要太黏人，但一定要能跟上你的节奏。你讨厌被束缚，所以稳定的关系对你来说需要足够的自由空间。最好的爱情是两个人一起探索世界。',
+    analysis: '你的主导气质是 SP（体验者）类型，追求刺激和感官体验。你活在当下，相信直觉而不是逻辑分析。在压力下你会表现得更冲动，但这也是你解决问题的方式——行动先于思考。你的成长方向是学会在冲动之前给自己三秒钟的冷静时间，这将让你既保持行动力又不轻易后悔。',
+  },
+  artist: {
+    emoji: '🎨',
+    title: '艺术家',
+    subtitle: '细腻敏感，浪漫灵魂',
+    desc: '你有一颗敏感而柔软的心，善于发现生活中被忽略的美。你可能话不多，但内心世界极其丰富。你享受独处，在安静的环境里最能找到自己。你对他人的情绪变化有着惊人的洞察力，常常能感知到别人没说出口的话。你可能是朋友眼中最懂倾听的那个人。',
+    career: ['设计师 / 插画师', '心理咨询师', '作家 / 编辑', '音乐人 / 作曲家', '花艺师 / 茶艺师'],
+    love: '你渴望灵魂伴侣式的爱情。比起轰轰烈烈，你更在意那些细腻的瞬间——一个眼神、一句晚安、一杯温度刚好的热水。你需要被理解，而不是被安排。能读懂你沉默的人，才能真正走进你的心。',
+    analysis: '你的主导气质是 NF（理想主义者）类型，追求意义和深度连接。你极度重视情感共鸣，对虚伪和表面社交有着天然的排斥。你的直觉异常敏锐，但有时会过度解读他人的言行，导致不必要的内耗。你的成长方向是学会区分"事实"和"感受"，在保持敏感的同时也拥有钝感力。',
+  },
+  thinker: {
+    emoji: '🧠',
+    title: '思想家',
+    subtitle: '理性冷静，深谋远虑',
+    desc: '你是一个靠脑子吃饭的人。遇到问题你首先想到的是分析、拆解、找规律。你不容易被情绪左右，在别人慌乱的时候你总能保持冷静。你喜欢读书、研究、琢磨事情的底层逻辑。虽然你看起来有点高冷，但那只是因为你的大脑一直在高速运转——你真的不是在生气。',
+    career: ['程序员 / 数据分析师', '科研人员 / 教授', '律师 / 咨询顾问', '工程师 / 架构师', '金融分析师'],
+    love: '你在感情中同样理性，但这不代表你不深情。你只是不擅长甜言蜜语，更愿意用行动证明自己。你喜欢和伴侣进行有深度的对话，讨论世界观、人生观比聊八卦有趣得多。你需要一个能和你精神同频的人，智性恋实锤了。',
+    analysis: '你的主导气质是 NT（理性主义者）类型，追求知识和能力。你的大脑天生喜欢系统和逻辑，对无效率的事情容忍度极低。你的冷静是你的超能力，但也可能让你显得疏离。你的成长方向是学会在理性之外给情感留出空间——不是所有问题都需要被解决，有些情绪只需要被看见。',
+  },
+  guardian: {
+    emoji: '🛡️',
+    title: '守护者',
+    subtitle: '踏实可靠，温暖坚定',
+    desc: '你是那种让人特别安心的存在。靠谱、负责、说到做到——这就是你的标签。你重视传统和秩序，喜欢把一切都安排得井井有条。对家人和朋友你有着极强的保护欲，总是默默付出不求回报。你或许不是人群中最耀眼的那一个，但一定是关键时刻最靠得住的那一个。',
+    career: ['公务员 / 事业单位', '教师 / 培训师', '医生 / 护士', '财务 / 审计', '人力资源'],
+    love: '你向往稳定而长久的感情。在你看来，最好的浪漫不是惊喜，而是日复一日的陪伴和守护。你记得每一个纪念日，会默默帮对方打理好生活里的小事。你需要的是一份同样认真、愿意和你一起经营未来的感情。',
+    analysis: '你的主导气质是 SJ（守护者）类型，追求安全和归属。你对责任感的重视远超常人，这让你成为团队和组织中不可或缺的基石。你善于规划和执行，但对突如其来的变化会感到不安。你的成长方向是学会适当放松对自己的要求——世界不会因为你偶尔的"不完美"就崩塌，你值得享受当下而非永远为未来焦虑。',
+  },
+};
+
+let currentQuestion = 0;
+let answers = [];
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function startQuiz() {
+  document.getElementById('pageStart').classList.add('hidden');
+  document.getElementById('pageQuiz').classList.remove('hidden');
+  currentQuestion = 0;
+  answers = [];
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQuestion];
+  document.getElementById('questionText').textContent = q.q;
+
+  const wrap = document.getElementById('optionsWrap');
+  wrap.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const label = document.createElement('label');
+    label.className = 'option';
+    const checked = answers[currentQuestion] === i ? 'checked' : '';
+    label.innerHTML = `
+      <input type="radio" name="q${currentQuestion}" value="${i}" ${checked}>
+      <span class="opt-label"><span class="dot"></span>${opt.text}</span>
+    `;
+    label.querySelector('input').addEventListener('change', () => {
+      answers[currentQuestion] = i;
+      document.getElementById('btnNext').disabled = false;
+    });
+    wrap.appendChild(label);
+  });
+
+  // progress
+  const pct = ((currentQuestion + 1) / QUESTIONS.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${currentQuestion + 1}/${QUESTIONS.length}`;
+
+  // buttons
+  document.getElementById('btnPrev').style.display = currentQuestion === 0 ? 'none' : 'block';
+  const nextBtn = document.getElementById('btnNext');
+  nextBtn.textContent = currentQuestion === QUESTIONS.length - 1 ? '查看结果' : '下一题';
+  nextBtn.disabled = answers[currentQuestion] === undefined;
+
+  // scroll top
+  document.getElementById('pageQuiz').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function prevQuestion() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    renderQuestion();
+  }
+}
+
+function nextQuestion() {
+  if (answers[currentQuestion] === undefined) return;
+  if (currentQuestion === QUESTIONS.length - 1) {
+    showResult();
+    return;
+  }
+  currentQuestion++;
+  renderQuestion();
+}
+
+function showResult() {
+  const counts = { adventurer:0, artist:0, thinker:0, guardian:0 };
+  answers.forEach((ansIdx, qIdx) => {
+    const type = QUESTIONS[qIdx].opts[ansIdx].type;
+    if (counts[type] !== undefined) counts[type]++;
+  });
+
+  let maxType = 'adventurer';
+  let maxCount = 0;
+  for (const t in counts) {
+    if (counts[t] > maxCount) {
+      maxCount = counts[t];
+      maxType = t;
+    }
+  }
+
+  const r = RESULTS[maxType];
+  document.getElementById('resultEmoji').textContent = r.emoji;
+  document.getElementById('resultType').textContent = r.title;
+  document.getElementById('resultTitle').textContent = r.subtitle;
+  document.getElementById('resultDesc').textContent = r.desc;
+
+  const careerUl = document.getElementById('resultCareer');
+  careerUl.innerHTML = '';
+  r.career.forEach(c => {
+    const li = document.createElement('li');
+    li.textContent = c;
+    careerUl.appendChild(li);
+  });
+
+  document.getElementById('resultLove').textContent = r.love;
+  document.getElementById('resultAnalysis').textContent = r.analysis;
+
+  document.getElementById('pageQuiz').classList.add('hidden');
+  document.getElementById('pageResult').classList.remove('hidden');
+  document.getElementById('pageResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // reset share button
+  const btn = document.getElementById('btnShare');
+  btn.textContent = '\u{1F4E4} 分享测试结果';
+  btn.classList.remove('copied');
+}
+
+function shareResult() {
+  const type = document.getElementById('resultType').textContent;
+  const emoji = document.getElementById('resultEmoji').textContent;
+  const text = `我测出了 ${emoji}${type} 人格！快来试试你的 MBTI 性格测试吧 \u{1F447}\nhttps://xxx.xxx/mbti`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('btnShare');
+      btn.textContent = '✅ 已复制，快去分享吧';
+      btn.classList.add('copied');
+      showToast('已复制到剪贴板');
+    }).catch(() => {
+      fallbackShare(text);
+    });
+  } else {
+    fallbackShare(text);
+  }
+}
+
+function fallbackShare(text) {
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('btnShare');
+    btn.textContent = '✅ 已复制，快去分享吧';
+    btn.classList.add('copied');
+    showToast('已复制到剪贴板');
+  }
+}
+
+function resetQuiz() {
+  currentQuestion = 0;
+  answers = [];
+  document.getElementById('pageResult').classList.add('hidden');
+  document.getElementById('pageStart').classList.remove('hidden');
+  document.getElementById('pageStart').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+
+</body>
+</html>

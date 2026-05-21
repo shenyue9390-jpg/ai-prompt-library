@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>随机抽签</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+  }
+  :root {
+    --primary:#ff6b35;
+    --primary-light:#ff8f5e;
+    --bg:#faf8f5;
+    --bg-card:#ffffff;
+    --text:#1a1410;
+    --text-sub:#6b5e52;
+    --text-mute:#a89a8e;
+    --border:rgba(0,0,0,0.07);
+    --radius:18px;
+    --radius-sm:10px;
+  }
+  .container {
+    width: 100%;
+    max-width: 420px;
+  }
+  /* back link */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-sub);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 24px;
+    transition: color .2s;
+  }
+  .back-link:hover { color: var(--primary); }
+
+  /* card */
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.04);
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  /* result area */
+  .result-area {
+    text-align: center;
+    padding: 32px 0 28px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .result-label {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 12px;
+  }
+  .result-text {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--primary);
+    transition: color .3s;
+    min-height: 1.2em;
+    line-height: 1.2;
+    word-break: keep-all;
+  }
+  .result-text.final {
+    color: var(--primary);
+  }
+  .result-text.running {
+    color: var(--text);
+  }
+
+  .btn-draw {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    margin-bottom: 12px;
+  }
+  .btn-draw:hover { background: var(--primary-light); }
+  .btn-draw:active { transform: scale(.97); }
+  .btn-draw:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .action-row button {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: background .2s, border-color .2s, color .2s;
+  }
+  .action-row button:hover {
+    border-color: var(--primary-light);
+    color: var(--primary);
+  }
+  .action-row button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+  }
+
+  /* input row */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .input-row input:focus {
+    border-color: var(--primary-light);
+  }
+  .input-row input::placeholder {
+    color: var(--text-mute);
+  }
+  .btn-add {
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--primary-light); }
+
+  /* tags */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    background: var(--bg);
+    border-radius: 20px;
+    color: var(--text-sub);
+    line-height: 1;
+  }
+  .tag .remove {
+    cursor: pointer;
+    color: var(--text-mute);
+    font-size: 15px;
+    line-height: 1;
+    transition: color .2s;
+    user-select: none;
+  }
+  .tag .remove:hover { color: var(--primary); }
+
+  .empty-hint {
+    color: var(--text-mute);
+    font-size: 13px;
+    text-align: center;
+    padding: 4px 0;
+  }
+  [data-theme="dark"] {
+    --bg: #13100e; --bg-card: #1f1a17; --text: #f5ede6;
+    --text-sub: #d4c0b0; --text-mute: #9a8070; --border: rgba(255,255,255,0.15);
+  }
+</style>
+</head>
+<body>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('tbox_theme')||'light')</script>
+<div class="container">
+  <a href="/" target="_top" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-sub);text-decoration:none;font-size:14px;padding:6px 0;">← 返回首页</a>
+  <div class="card">
+    <h1>🎲 随机抽签</h1>
+
+    <div class="result-area">
+      <div class="result-label">抽签结果</div>
+      <div class="result-text" id="resultDisplay">点我试试</div>
+    </div>
+
+    <button class="btn-draw" id="drawBtn">🎲 开始抽签</button>
+
+    <div class="action-row">
+      <button id="resetBtn">重置</button>
+      <button id="keepAddBtn">继续添加</button>
+    </div>
+
+    <div class="input-row">
+      <input type="text" id="itemInput" placeholder="输入选项，如 逛街" maxlength="20" autocomplete="off">
+      <button class="btn-add" id="addBtn">添加</button>
+    </div>
+
+    <div class="tags" id="tagsContainer"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DEFAULT_ITEMS = ['看电影', '吃火锅', '打游戏', '学习', '健身', '睡觉'];
+
+  const drawBtn     = document.getElementById('drawBtn');
+  const resetBtn    = document.getElementById('resetBtn');
+  const keepAddBtn  = document.getElementById('keepAddBtn');
+  const itemInput   = document.getElementById('itemInput');
+  const addBtn      = document.getElementById('addBtn');
+  const tagsEl      = document.getElementById('tagsContainer');
+  const resultEl    = document.getElementById('resultDisplay');
+
+  let items = [...DEFAULT_ITEMS];
+  let isRunning = false;
+  let timer = null;
+
+  function renderTags() {
+    if (items.length === 0) {
+      tagsEl.innerHTML = '<div class="empty-hint">暂无选项，请添加</div>';
+      return;
+    }
+    tagsEl.innerHTML = items.map((item, i) =>
+      `<span class="tag">${escapeHtml(item)}<span class="remove" data-index="${i}">×</span></span>`
+    ).join('');
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function addItem(val) {
+    const v = val.trim();
+    if (!v) return;
+    if (items.includes(v)) {
+      itemInput.value = '';
+      return;
+    }
+    items.push(v);
+    itemInput.value = '';
+    renderTags();
+  }
+
+  function removeItem(index) {
+    items.splice(index, 1);
+    renderTags();
+  }
+
+  function stopDraw(keepItems) {
+    if (!keepItems) {
+      items = [...DEFAULT_ITEMS];
+    }
+    renderTags();
+  }
+
+  function resetItems() {
+    if (isRunning) return;
+    items = [...DEFAULT_ITEMS];
+    resultEl.textContent = '点我试试';
+    resultEl.className = 'result-text';
+    renderTags();
+    drawBtn.disabled = false;
+    resetBtn.disabled = false;
+    keepAddBtn.disabled = false;
+    itemInput.disabled = false;
+    addBtn.disabled = false;
+  }
+
+  function startDraw() {
+    if (isRunning) return;
+    if (items.length === 0) {
+      resultEl.textContent = '请先添加选项';
+      resultEl.className = 'result-text';
+      return;
+    }
+    if (items.length === 1) {
+      resultEl.textContent = '🎯 ' + items[0];
+      resultEl.className = 'result-text final';
+      return;
+    }
+
+    isRunning = true;
+    drawBtn.disabled = true;
+    resetBtn.disabled = true;
+    keepAddBtn.disabled = true;
+    itemInput.disabled = true;
+    addBtn.disabled = true;
+
+    resultEl.className = 'result-text running';
+
+    const startTime = Date.now();
+    const duration = 1500;
+    let lastIndex = -1;
+
+    // quickly flick through items
+    function tick() {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= duration) {
+        // settle
+        const finalIndex = Math.floor(Math.random() * items.length);
+        resultEl.textContent = '🎯 ' + items[finalIndex];
+        resultEl.className = 'result-text final';
+
+        isRunning = false;
+        drawBtn.disabled = false;
+        resetBtn.disabled = false;
+        keepAddBtn.disabled = false;
+        itemInput.disabled = false;
+        addBtn.disabled = false;
+        return;
+      }
+
+      // pick a different index each tick
+      let ri;
+      do {
+        ri = Math.floor(Math.random() * items.length);
+      } while (ri === lastIndex && items.length > 1);
+      lastIndex = ri;
+
+      resultEl.textContent = items[ri];
+
+      // adaptive interval: faster toward the end
+      const progress = elapsed / duration;
+      const interval = 30 + Math.floor(progress * 70);
+      timer = setTimeout(tick, interval);
+    }
+
+    tick();
+  }
+
+  // --- event binding ---
+  drawBtn.addEventListener('click', startDraw);
+
+  resetBtn.addEventListener('click', resetItems);
+
+  keepAddBtn.addEventListener('click', function() {
+    if (isRunning) return;
+    resultEl.textContent = '点我试试';
+    resultEl.className = 'result-text';
+  });
+
+  addBtn.addEventListener('click', function() {
+    if (isRunning) return;
+    addItem(itemInput.value);
+  });
+
+  itemInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isRunning) return;
+      addItem(itemInput.value);
+    }
+  });
+
+  tagsEl.addEventListener('click', function(e) {
+    if (isRunning) return;
+    const removeEl = e.target.closest('.remove');
+    if (removeEl) {
+      const idx = parseInt(removeEl.dataset.index, 10);
+      removeItem(idx);
+    }
+  });
+
+  // init
+  renderTags();
+  resultEl.textContent = '点我试试';
+})();
+</script>
+</body>
+</html>

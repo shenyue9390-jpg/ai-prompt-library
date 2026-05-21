@@ -1,0 +1,9 @@
+{
+  "name": "daily-tools",
+  "version": "1.0.0",
+  "description": "天天工具箱 - 变现工具站",
+  "scripts": {
+    "deploy": "vercel --prod",
+    "dev": "vercel dev"
+  }
+}
